@@ -17,6 +17,8 @@ pub mod resource;
 pub use resource::*;
 pub mod state;
 pub use state::*;
+pub mod transition;
+pub use transition::*;
 
 pub trait ToLang {
     fn to_lang(&self, model: &Model) -> String;

@@ -1,5 +1,6 @@
 use super::*;
-use crate::parser::Position;
+use crate::parser::{Position, RlError};
+use std::collections::HashMap;
 
 #[derive(Clone, Copy, PartialEq)]
 pub struct SkillsetId(pub usize);
@@ -90,6 +91,65 @@ impl Skillset {
         let StateId(resource_id, _) = id;
         let resource = self.get_resource(resource_id)?;
         resource.get_state(id)
+    }
+
+    pub fn find_resource(&self, name: &str) -> Option<ResourceId> {
+        for x in self.resources.iter() {
+            if x.name() == name {
+                return Some(x.id());
+            }
+        }
+        None
+    }
+
+    //---------- Duplicate ----------
+
+    pub fn duplicate(&self) -> Result<(), RlError> {
+        self.duplicate_data()?;
+        self.duplicate_resource()?;
+        for x in self.resources.iter() {
+            x.duplicate()?;
+        }
+        Ok(())
+    }
+
+    fn duplicate_data(&self) -> Result<(), RlError> {
+        for (i, x) in self.data.iter().enumerate() {
+            for y in self.data.iter().skip(i + 1) {
+                if x.name() == y.name() {
+                    return Err(RlError::Duplicate {
+                        name: x.name().into(),
+                        first: x.position(),
+                        second: y.position(),
+                    });
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn duplicate_resource(&self) -> Result<(), RlError> {
+        for (i, x) in self.resources.iter().enumerate() {
+            for y in self.resources.iter().skip(i + 1) {
+                if x.name() == y.name() {
+                    return Err(RlError::Duplicate {
+                        name: x.name().into(),
+                        first: x.position(),
+                        second: y.position(),
+                    });
+                }
+            }
+        }
+        Ok(())
+    }
+
+    //---------- Resolve ----------
+
+    pub fn resolve_type(&mut self, map: &HashMap<String, TypeId>) -> Result<(), RlError> {
+        for x in self.data.iter_mut() {
+            x.resolve_type(map)?;
+        }
+        Ok(())
     }
 
     //---------- ----------

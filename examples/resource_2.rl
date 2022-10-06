@@ -2,6 +2,9 @@ skillset Robot {
     resource R {
         state { s1 s2 }
         initial s2
-        transition all
+        transition {
+            s1 -> s2
+            s2 -> s1
+        }
     }
 }

@@ -1,5 +1,6 @@
 use super::*;
-use crate::parser::Position;
+use crate::parser::{Position, RlError};
+use std::collections::HashMap;
 
 #[derive(Clone, Copy, PartialEq)]
 pub struct DataId(pub SkillsetId, pub usize);
@@ -48,8 +49,30 @@ impl Data {
         &self.rl_type
     }
 
+    pub fn set_type(&mut self, id: TypeId) {
+        self.rl_type = Reference::Resolved(id);
+    }
+
     pub fn position(&self) -> Option<Position> {
         self.position
+    }
+
+    //---------- Resolve ----------
+
+    pub fn resolve_type(&mut self, map: &HashMap<String, TypeId>) -> Result<(), RlError> {
+        match self.rl_type() {
+            Reference::Unresolved(name, pos) => match map.get(name) {
+                Some(id) => {
+                    self.set_type(*id);
+                    Ok(())
+                }
+                None => Err(RlError::Resolve {
+                    element: format!("type '{}'", name),
+                    position: *pos,
+                }),
+            },
+            Reference::Resolved(_) => Ok(()),
+        }
     }
 }
 

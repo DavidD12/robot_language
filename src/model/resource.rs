@@ -1,5 +1,6 @@
 use super::*;
-use crate::parser::Position;
+use crate::parser::{Position, RlError};
+use std::collections::HashMap;
 
 #[derive(Clone, Copy, PartialEq)]
 pub struct ResourceId(pub SkillsetId, pub usize);
@@ -14,7 +15,7 @@ pub struct Resource {
     name: String,
     states: Vec<State>,
     initial: Reference<StateId>,
-    // transitions: Vec<Transition>,
+    transitions: Transitions,
     position: Option<Position>,
 }
 
@@ -27,6 +28,7 @@ impl Resource {
             name,
             states: Vec::new(),
             initial: Reference::Unresolved("?".into(), None),
+            transitions: Transitions::All,
             position,
         }
     }
@@ -63,12 +65,53 @@ impl Resource {
         }
     }
 
+    pub fn find_state(&self, name: &str) -> Option<StateId> {
+        for x in self.states.iter() {
+            if x.name() == name {
+                return Some(x.id());
+            }
+        }
+        None
+    }
+
     pub fn set_initial(&mut self, state: Reference<StateId>) {
         self.initial = state;
     }
 
+    pub fn transitions(&self) -> &Transitions {
+        &self.transitions
+    }
+
+    pub fn set_transitions(&mut self, transitions: Transitions) {
+        self.transitions = transitions;
+    }
+
     pub fn position(&self) -> Option<Position> {
         self.position
+    }
+
+    //---------- Duplicate ----------
+
+    pub fn duplicate(&self) -> Result<(), RlError> {
+        for (i, x) in self.states.iter().enumerate() {
+            for y in self.states.iter().skip(i + 1) {
+                if x.name() == y.name() {
+                    return Err(RlError::Duplicate {
+                        name: x.name().into(),
+                        first: x.position(),
+                        second: y.position(),
+                    });
+                }
+            }
+        }
+        Ok(())
+    }
+
+    //---------- Resolve ----------
+
+    pub fn resolve_state(&mut self, map: &HashMap<String, TypeId>) -> Result<(), RlError> {
+        // TODO
+        Ok(())
     }
 }
 
@@ -84,6 +127,9 @@ impl ToLang for Resource {
         s.push_str(" }\n");
         // initial
         s.push_str(&format!("\t\t\tinitial {}\n", self.initial.to_lang(model)));
+        // transitions
+        s.push_str(&self.transitions.to_lang(model));
+        //
         s.push_str("\t\t}\n");
         s
     }

@@ -91,12 +91,13 @@ ResourceBlock: Vec<Resource> = "resource" "{" <l:ResourceDef*> "}" => {
     l
 };
 
-ResourceDef: Resource = <x:Identifier> "{" <s:StateDef> <i:InitialDef> "}" => {
+ResourceDef: Resource = <x:Identifier> "{" <s:StateDef> <i:InitialDef> <t:Transitions> "}" => {
     let mut resource = Resource::empty(x.name, Some(x.position));
     for x in s {
         resource.add_state(x);
     }
     resource.set_initial(i);
+    resource.set_transitions(t);
     resource
 };
 
@@ -112,6 +113,16 @@ InitialDef: Reference<StateId> = "initial" <i:Identifier> => {
     Reference::Unresolved(i.name, Some(i.position))
 };
 
+Transitions: Transitions = {
+    "transition" "all" => Transitions::All,
+    "transition" "{" <l:Transition*> "}" => Transitions::List(l),
+};
+
+Transition: Transition = <s:Identifier> "->" <d:Identifier> => {
+    let src = Reference::Unresolved(s.name, Some(s.position));
+    let dst = Reference::Unresolved(d.name, Some(d.position));
+    Transition::new(src, dst)
+};
 
 //------------------------- Lexer -------------------------
 

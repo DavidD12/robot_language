@@ -14,7 +14,27 @@ pub fn process_file(model: &mut Model, filename: &str) -> Result<(), RlError> {
     // Parsing
     match parse_model_file(model, filename) {
         Ok(_) => info!("Parsing OK"),
-        e => return e,
+        Err(e) => {
+            error!("{}", e);
+            return Err(e);
+        }
     }
+    // Duplicate
+    match model.duplicate() {
+        Ok(_) => info!("Duplicate OK"),
+        Err(e) => {
+            error!("{}", e);
+            return Err(e);
+        }
+    }
+    // Resolve
+    match model.resolve() {
+        Ok(_) => info!("Resolve OK"),
+        Err(e) => {
+            error!("{}", e);
+            return Err(e);
+        }
+    }
+    //
     Ok(())
 }
