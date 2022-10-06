@@ -1,0 +1,120 @@
+
+use crate::model::*;
+use super::*;
+use line_col::LineColLookup;
+
+grammar(lookup: &LineColLookup<'input>, model: &mut Model);
+
+match {
+    r"\s*" => { }, // The default whitespace skipping is disabled an `ignore pattern` is specified
+    r"//[^\n\r]*[\n\r]*" => { }, // Skip `// comments`
+    r"/\*[^*]*\*+(?:[^/*][^*]*\*+)*/" => { },  // Skip `/* comments */`
+    _
+}
+
+//------------------------- Model -------------------------
+
+pub Model: () = <types: Type> <skillsets: Skillset*> => {
+    for x in types {
+        model.add_type(x);
+    }
+    for x in skillsets {
+        model.add_skillset(x);
+    }
+};
+
+//------------------------- Type -------------------------
+
+Type: Vec<RlType> = {
+    <v: TypeSingle*> => v,
+    <v: TypeBlock> => v,
+};
+
+TypeSingle: RlType = "type" <x:Identifier> => {
+    RlType::empty(x.name, Some(x.position))
+};
+
+TypeBlock: Vec<RlType> = "type" "{" <l:(<Identifier>)*> "}" => {
+    let mut v = Vec::new();
+    for x in l {
+        v.push(RlType::empty(x.name, Some(x.position)))
+    }
+    v
+};
+
+//------------------------- Skillset -------------------------
+
+Skillset: Skillset = "skillset" <x:Identifier> "{" <data:Data> <resources:Resource> "}" => {
+    let mut skillset = Skillset::empty(x.name, Some(x.position));
+    for x in data {
+        skillset.add_data(x);
+    }
+    for x in resources {
+        skillset.add_resource(x);
+    }
+    skillset
+};
+
+//------------------------- Data -------------------------
+
+Data: Vec<Data> = {
+    <v: DataSingle*> => v,
+    <v: DataBlock> => v,
+};
+
+DataSingle: Data = "data" <x:Identifier> ":" <y:Identifier> => {
+    let t = Reference::Unresolved(y.name, Some(y.position));
+    Data::empty(x.name, t, Some(x.position))
+};
+
+DataBlock: Vec<Data> = "data" "{" <l:(<Identifier> ":" <Identifier>)*> "}" => {
+    let mut v = Vec::new();
+    for (x, y) in l {
+        let t = Reference::Unresolved(y.name, Some(y.position));
+        v.push(Data::empty(x.name, t, Some(x.position)));
+    }
+    v
+};
+
+//------------------------- Resource -------------------------
+
+Resource: Vec<Resource> = {
+    <v: ResourceSingle*> => v,
+    <v: ResourceBlock> => v,
+};
+
+ResourceSingle: Resource = "resource" <x:ResourceDef> => {
+    x
+};
+
+ResourceBlock: Vec<Resource> = "resource" "{" <l:ResourceDef*> "}" => {
+    l
+};
+
+ResourceDef: Resource = <x:Identifier> "{" <s:StateDef> <i:InitialDef> "}" => {
+    let mut resource = Resource::empty(x.name, Some(x.position));
+    for x in s {
+        resource.add_state(x);
+    }
+    resource.set_initial(i);
+    resource
+};
+
+StateDef: Vec<State> = "state" "{" <l:Identifier*> "}" => {
+    let mut v = Vec::new();
+    for x in l {
+        v.push(State::empty(x.name, Some(x.position)));
+    }
+    v
+};
+
+InitialDef: Reference<StateId> = "initial" <i:Identifier> => {
+    Reference::Unresolved(i.name, Some(i.position))
+};
+
+
+//------------------------- Lexer -------------------------
+
+Identifier: Identifier = <l:@L> <s:r"[a-zA-Z_][a-zA-Z_0-9]*"> <r:@R> => {
+    Identifier::new(lookup, s, l)
+};
