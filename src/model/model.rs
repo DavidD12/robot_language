@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use super::*;
-use crate::parser::RlError;
+use crate::parser::{Position, RlError};
 
 pub struct Model {
     types: Vec<RlType>,
@@ -100,41 +100,76 @@ impl Model {
         resource.get_state(id)
     }
 
-    //---------- Duplicate ----------
+    //---------- Event ----------
 
-    pub fn duplicate(&self) -> Result<(), RlError> {
-        self.duplicate_type()?;
-        for x in self.skillsets.iter() {
-            x.duplicate()?;
-        }
-        Ok(())
+    pub fn get_event(&self, id: EventId) -> Option<&Event> {
+        let EventId(skillset_id, _) = id;
+        let skillset = self.get_skillset(skillset_id)?;
+        skillset.get_event(id)
     }
 
-    fn duplicate_type(&self) -> Result<(), RlError> {
-        for (i, x) in self.types.iter().enumerate() {
-            for y in self.types.iter().skip(i + 1) {
-                if x.name() == y.name() {
+    //---------- Duplicate ----------
+
+    pub fn names(&self) -> Vec<(String, Option<Position>)> {
+        let mut v = Vec::new();
+        // Type
+        for x in self.types.iter() {
+            v.push((x.name().into(), x.position()));
+        }
+        // Skillset
+        for x in self.skillsets.iter() {
+            v.push((x.name().into(), x.position()));
+        }
+        v
+    }
+
+    pub fn duplicate(&self) -> Result<(), RlError> {
+        let names = self.names();
+        for (i, (n1, p1)) in names.iter().enumerate() {
+            for (n2, p2) in names.iter().skip(i + 1) {
+                if n1 == n2 {
                     return Err(RlError::Duplicate {
-                        name: x.name().into(),
-                        first: x.position(),
-                        second: y.position(),
+                        name: n1.clone(),
+                        first: *p1,
+                        second: *p2,
                     });
                 }
             }
         }
+        // skillset
+        for x in self.skillsets.iter() {
+            x.duplicate(self)?;
+        }
+        //
         Ok(())
     }
 
     //---------- Resolve ----------
 
     pub fn resolve(&mut self) -> Result<(), RlError> {
-        self.resolve_type()
+        self.resolve_type()?;
+        self.resolve_resource()?;
+        self.resolve_state()
     }
 
     fn resolve_type(&mut self) -> Result<(), RlError> {
         let map = self.type_map();
         for x in self.skillsets.iter_mut() {
             x.resolve_type(&map)?;
+        }
+        Ok(())
+    }
+
+    fn resolve_resource(&mut self) -> Result<(), RlError> {
+        for x in self.skillsets.iter_mut() {
+            x.resolve_resource()?;
+        }
+        Ok(())
+    }
+
+    fn resolve_state(&mut self) -> Result<(), RlError> {
+        for x in self.skillsets.iter_mut() {
+            x.resolve_state()?;
         }
         Ok(())
     }

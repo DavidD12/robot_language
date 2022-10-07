@@ -15,6 +15,7 @@ pub struct Skillset {
     name: String,
     data: Vec<Data>,
     resources: Vec<Resource>,
+    events: Vec<Event>,
     position: Option<Position>,
 }
 
@@ -27,6 +28,7 @@ impl Skillset {
             name,
             data: Vec::new(),
             resources: Vec::new(),
+            events: Vec::new(),
             position,
         }
     }
@@ -87,12 +89,6 @@ impl Skillset {
         id
     }
 
-    pub fn get_state(&self, id: StateId) -> Option<&State> {
-        let StateId(resource_id, _) = id;
-        let resource = self.get_resource(resource_id)?;
-        resource.get_state(id)
-    }
-
     pub fn find_resource(&self, name: &str) -> Option<ResourceId> {
         for x in self.resources.iter() {
             if x.name() == name {
@@ -102,40 +98,85 @@ impl Skillset {
         None
     }
 
-    //---------- Duplicate ----------
-
-    pub fn duplicate(&self) -> Result<(), RlError> {
-        self.duplicate_data()?;
-        self.duplicate_resource()?;
+    pub fn resource_map(&self) -> HashMap<String, ResourceId> {
+        let mut map = HashMap::new();
         for x in self.resources.iter() {
-            x.duplicate()?;
+            map.insert(x.name().into(), x.id());
         }
-        Ok(())
+        map
     }
 
-    fn duplicate_data(&self) -> Result<(), RlError> {
-        for (i, x) in self.data.iter().enumerate() {
-            for y in self.data.iter().skip(i + 1) {
-                if x.name() == y.name() {
-                    return Err(RlError::Duplicate {
-                        name: x.name().into(),
-                        first: x.position(),
-                        second: y.position(),
-                    });
-                }
+    //---------- State ----------
+
+    pub fn get_state(&self, id: StateId) -> Option<&State> {
+        let StateId(resource_id, _) = id;
+        let resource = self.get_resource(resource_id)?;
+        resource.get_state(id)
+    }
+
+    pub fn state_map(&self) -> HashMap<String, StateId> {
+        let mut map = HashMap::new();
+        for x in self.resources.iter() {
+            for y in x.states().iter() {
+                map.insert(y.name().into(), y.id());
             }
         }
-        Ok(())
+        map
     }
 
-    fn duplicate_resource(&self) -> Result<(), RlError> {
-        for (i, x) in self.resources.iter().enumerate() {
-            for y in self.resources.iter().skip(i + 1) {
-                if x.name() == y.name() {
+    //---------- Event ----------
+
+    pub fn events(&self) -> &Vec<Event> {
+        &self.events
+    }
+
+    pub fn get_event(&self, id: EventId) -> Option<&Event> {
+        let EventId(skillset_id, event_id) = id;
+        if self.id != skillset_id {
+            None
+        } else {
+            self.events.get(event_id)
+        }
+    }
+
+    pub fn add_event(&mut self, mut event: Event) -> EventId {
+        let id = EventId(self.id, self.events.len());
+        event.set_id(id);
+        self.events.push(event);
+        id
+    }
+
+    //---------- Duplicate ----------
+
+    pub fn names(&self, names: Vec<(String, Option<Position>)>) -> Vec<(String, Option<Position>)> {
+        let mut v = Vec::new();
+        //
+        v.extend(names);
+        // Data
+        for x in self.data.iter() {
+            v.push((x.name().into(), x.position()));
+        }
+        // Resource
+        for x in self.resources.iter() {
+            v.push((x.name().into(), x.position()));
+            v.extend(x.names());
+        }
+        // Event
+        for x in self.events.iter() {
+            v.push((x.name().into(), x.position()));
+        }
+        v
+    }
+
+    pub fn duplicate(&self, model: &Model) -> Result<(), RlError> {
+        let names = self.names(model.names());
+        for (i, (n1, p1)) in names.iter().enumerate() {
+            for (n2, p2) in names.iter().skip(i + 1) {
+                if n1 == n2 {
                     return Err(RlError::Duplicate {
-                        name: x.name().into(),
-                        first: x.position(),
-                        second: y.position(),
+                        name: n1.clone(),
+                        first: *p1,
+                        second: *p2,
                     });
                 }
             }
@@ -148,6 +189,25 @@ impl Skillset {
     pub fn resolve_type(&mut self, map: &HashMap<String, TypeId>) -> Result<(), RlError> {
         for x in self.data.iter_mut() {
             x.resolve_type(map)?;
+        }
+        Ok(())
+    }
+
+    pub fn resolve_resource(&mut self) -> Result<(), RlError> {
+        let map = self.resource_map();
+        for x in self.events.iter_mut() {
+            x.resolve_resource(&map)?;
+        }
+        Ok(())
+    }
+
+    pub fn resolve_state(&mut self) -> Result<(), RlError> {
+        for x in self.resources.iter_mut() {
+            x.resolve_state()?;
+        }
+        let map = self.state_map();
+        for x in self.events.iter_mut() {
+            x.resolve_state(&map)?;
         }
         Ok(())
     }
@@ -175,6 +235,14 @@ impl ToLang for Skillset {
         if !self.resources.is_empty() {
             s.push_str("\tresource {\n");
             for x in self.resources.iter() {
+                s.push_str(&x.to_lang(model));
+            }
+            s.push_str("\t}\n");
+        }
+        // Event
+        if !self.events.is_empty() {
+            s.push_str("\tevent {\n");
+            for x in self.events.iter() {
                 s.push_str(&x.to_lang(model));
             }
             s.push_str("\t}\n");

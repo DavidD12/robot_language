@@ -45,6 +45,8 @@ impl Resource {
         &self.name
     }
 
+    //---------- State ----------
+
     pub fn states(&self) -> &Vec<State> {
         &self.states
     }
@@ -78,6 +80,16 @@ impl Resource {
         self.initial = state;
     }
 
+    pub fn state_map(&self) -> HashMap<String, StateId> {
+        let mut map = HashMap::new();
+        for x in self.states.iter() {
+            map.insert(x.name().into(), x.id());
+        }
+        map
+    }
+
+    //---------- Transition ----------
+
     pub fn transitions(&self) -> &Transitions {
         &self.transitions
     }
@@ -92,26 +104,37 @@ impl Resource {
 
     //---------- Duplicate ----------
 
-    pub fn duplicate(&self) -> Result<(), RlError> {
-        for (i, x) in self.states.iter().enumerate() {
-            for y in self.states.iter().skip(i + 1) {
-                if x.name() == y.name() {
-                    return Err(RlError::Duplicate {
-                        name: x.name().into(),
-                        first: x.position(),
-                        second: y.position(),
-                    });
-                }
-            }
+    pub fn names(&self) -> Vec<(String, Option<Position>)> {
+        let mut v = Vec::new();
+        for x in self.states.iter() {
+            v.push((x.name().into(), x.position()))
         }
-        Ok(())
+        v
     }
 
     //---------- Resolve ----------
 
-    pub fn resolve_state(&mut self, map: &HashMap<String, TypeId>) -> Result<(), RlError> {
-        // TODO
+    pub fn resolve_state(&mut self) -> Result<(), RlError> {
+        let map = self.state_map();
+        self.resolve_initial_state(&map)?;
+        self.transitions.resolve(&map)?;
         Ok(())
+    }
+
+    fn resolve_initial_state(&mut self, map: &HashMap<String, StateId>) -> Result<(), RlError> {
+        match &self.initial {
+            Reference::Unresolved(name, pos) => match map.get(name) {
+                Some(id) => {
+                    self.initial = Reference::Resolved(*id);
+                    Ok(())
+                }
+                None => Err(RlError::Resolve {
+                    element: format!("state '{}'", name),
+                    position: *pos,
+                }),
+            },
+            Reference::Resolved(_) => Ok(()),
+        }
     }
 }
 
@@ -132,5 +155,11 @@ impl ToLang for Resource {
         //
         s.push_str("\t\t}\n");
         s
+    }
+}
+
+impl std::fmt::Display for Resource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
     }
 }

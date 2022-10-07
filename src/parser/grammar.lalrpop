@@ -44,13 +44,16 @@ TypeBlock: Vec<RlType> = "type" "{" <l:(<Identifier>)*> "}" => {
 
 //------------------------- Skillset -------------------------
 
-Skillset: Skillset = "skillset" <x:Identifier> "{" <data:Data> <resources:Resource> "}" => {
+Skillset: Skillset = "skillset" <x:Identifier> "{" <data:Data> <resources:Resource> <events:Event> "}" => {
     let mut skillset = Skillset::empty(x.name, Some(x.position));
     for x in data {
         skillset.add_data(x);
     }
     for x in resources {
         skillset.add_resource(x);
+    }
+    for x in events {
+        skillset.add_event(x);
     }
     skillset
 };
@@ -122,6 +125,94 @@ Transition: Transition = <s:Identifier> "->" <d:Identifier> => {
     let src = Reference::Unresolved(s.name, Some(s.position));
     let dst = Reference::Unresolved(d.name, Some(d.position));
     Transition::new(src, dst)
+};
+
+//------------------------- Event -------------------------
+
+Event: Vec<Event> = {
+    <v: EventSingle*> => v,
+    <v: EventBlock> => v,
+};
+
+EventSingle: Event = "event" <e:EventDef> => {
+    e
+};
+
+EventBlock: Vec<Event> = "event" "{" <l:EventDef*> "}" => {
+    l
+};
+
+EventDef: Event = <x:Identifier> "{" <g:Guard?> <l:Effects> "}" => {
+    Event::empty(x.name, g, l, Some(x.position))
+};
+
+Guard: Expr = "guard" <e:Expr> => {
+    e
+};
+
+//------------------------- Effect -------------------------
+
+Effects: Vec<Effect> = {
+    <v: EffectSingle> => v,
+    <v: EffectBlock> => v
+};
+
+EffectSingle: Vec<Effect> = "effect" <e:Effect> => {
+    vec![e]
+};
+
+EffectBlock: Vec<Effect> = "effect" "{" <l:Effect*> "}" => {
+    l
+};
+
+Effect: Effect = <r:Identifier> "->" <s:Identifier> => {
+    let resource = Reference::Unresolved(r.name, Some(r.position));
+    let state = Reference::Unresolved(s.name, Some(s.position));
+    Effect::new(resource, state)
+};
+
+//------------------------- Expr -------------------------
+
+Expr: Expr = ImpliesExpr;
+ImpliesExpr: Expr = {
+    <left:ImpliesExpr> "=>" <right:OrExpr> => {
+        Expr::Implies(Box::new(left), Box::new(right))
+    },
+    OrExpr,
+};
+OrExpr: Expr = {
+    <left:OrExpr> "or" <right:AndExpr> => {
+        Expr::Or(Box::new(left), Box::new(right))
+    },
+    AndExpr,
+};
+AndExpr: Expr = {
+    <left:AndExpr> "and" <right:NotExpr> => {
+        Expr::And(Box::new(left), Box::new(right))
+    },
+    NotExpr,
+};
+NotExpr: Expr = {
+    "not" <e: NotExpr> => {
+        Expr::Not(Box::new(e))
+    },
+    Term,
+};
+
+Term: Expr = {
+    "false" => Expr::False,
+    "true" => Expr::True,
+    <r:Identifier> "==" <s:Identifier> => {
+        let resource = Reference::Unresolved(r.name, Some(r.position));
+        let state = Reference::Unresolved(s.name, Some(s.position));
+        Expr::ResourceEq(resource, state)
+    },
+    <r:Identifier> "!=" <s:Identifier> => {
+        let resource = Reference::Unresolved(r.name, Some(r.position));
+        let state = Reference::Unresolved(s.name, Some(s.position));
+        Expr::ResourceNe(resource, state)
+    },
+    "(" <Expr> ")",
 };
 
 //------------------------- Lexer -------------------------

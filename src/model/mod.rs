@@ -20,6 +20,15 @@ pub use state::*;
 pub mod transition;
 pub use transition::*;
 
+pub mod event;
+pub use event::*;
+
+pub mod effect;
+pub use effect::*;
+
+pub mod expr;
+pub use expr::*;
+
 pub trait ToLang {
     fn to_lang(&self, model: &Model) -> String;
 }
