@@ -189,6 +189,11 @@ impl Skillset {
         for x in self.events.iter() {
             v.push((x.name().into(), x.position()));
         }
+        // Skill
+        for x in self.skills.iter() {
+            v.push((x.name().into(), x.position()));
+            v.extend(x.names());
+        }
         v
     }
 
@@ -211,8 +216,13 @@ impl Skillset {
     //---------- Resolve ----------
 
     pub fn resolve_type(&mut self, map: &HashMap<String, TypeId>) -> Result<(), RlError> {
+        // Data
         for x in self.data.iter_mut() {
             x.resolve_type(map)?;
+        }
+        // Skill
+        for x in self.skills.iter_mut() {
+            x.resolve_type(&map)?;
         }
         Ok(())
     }
@@ -263,7 +273,7 @@ impl ToLang for Skillset {
         if !self.data.is_empty() {
             s.push_str("\tdata {\n");
             for x in self.data.iter() {
-                s.push_str(&x.to_lang(model));
+                s.push_str(&format!("\t\t{}", &x.to_lang(model)));
             }
             s.push_str("\t}\n");
         }

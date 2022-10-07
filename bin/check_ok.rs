@@ -38,4 +38,7 @@ fn main() {
     check("examples/skill_1.rl");
     check("examples/precondition_1.rl");
     check("examples/precondition_2.rl");
+    check("examples/input_output_1.rl");
+    check("examples/start_1.rl");
+    check("examples/start_2.rl");
 }

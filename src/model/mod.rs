@@ -25,6 +25,10 @@ pub use event::*;
 
 pub mod skill;
 pub use skill::*;
+pub mod input;
+pub use input::*;
+pub mod output;
+pub use output::*;
 pub mod precondition;
 pub use precondition::*;
 

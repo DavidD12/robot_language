@@ -3,27 +3,27 @@ use crate::parser::{Position, RlError};
 use std::collections::HashMap;
 
 #[derive(Clone, Copy, PartialEq)]
-pub struct DataId(pub SkillsetId, pub usize);
-impl Id for DataId {
+pub struct InputId(pub SkillId, pub usize);
+impl Id for InputId {
     fn empty() -> Self {
-        Self(SkillsetId::empty(), 0)
+        Self(SkillId::empty(), 0)
     }
 }
 
-pub struct Data {
-    id: DataId,
+pub struct Input {
+    id: InputId,
     name: String,
     rl_type: Reference<TypeId>,
     position: Option<Position>,
 }
 
-impl Data {
+impl Input {
     pub fn empty<S: Into<String>>(
         name: S,
         rl_type: Reference<TypeId>,
         position: Option<Position>,
     ) -> Self {
-        let id = DataId::empty();
+        let id = InputId::empty();
         let name = name.into();
         Self {
             id,
@@ -33,11 +33,11 @@ impl Data {
         }
     }
 
-    pub fn id(&self) -> DataId {
+    pub fn id(&self) -> InputId {
         self.id
     }
 
-    pub fn set_id(&mut self, id: DataId) {
+    pub fn set_id(&mut self, id: InputId) {
         self.id = id;
     }
 
@@ -76,13 +76,13 @@ impl Data {
     }
 }
 
-impl ToLang for Data {
+impl ToLang for Input {
     fn to_lang(&self, model: &Model) -> String {
-        format!("{}: {}\n", self.name, self.rl_type.to_lang(model))
+        format!("{}: {}", self.name, self.rl_type.to_lang(model))
     }
 }
 
-impl std::fmt::Display for Data {
+impl std::fmt::Display for Input {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.name)
     }

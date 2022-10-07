@@ -42,6 +42,10 @@ TypeBlock: Vec<RlType> = "type" "{" <l:(<Identifier>)*> "}" => {
     v
 };
 
+TypeRef: Reference<TypeId> = <x:Identifier> => {
+    Reference::Unresolved(x.name, Some(x.position))
+};
+
 //------------------------- Skillset -------------------------
 
 Skillset: Skillset = "skillset" <x:Identifier> "{" <data:Data> <resources:Resource> <events:Event> <skills:Skill> "}" => {
@@ -68,19 +72,10 @@ Data: Vec<Data> = {
     <v: DataBlock> => v,
 };
 
-DataSingle: Data = "data" <x:Identifier> ":" <y:Identifier> => {
-    let t = Reference::Unresolved(y.name, Some(y.position));
-    Data::empty(x.name, t, Some(x.position))
-};
+DataSingle: Data = "data" <d:DataDef> => d;
+DataBlock: Vec<Data> = "data" "{" <l:DataDef*> "}" => l;
 
-DataBlock: Vec<Data> = "data" "{" <l:(<Identifier> ":" <Identifier>)*> "}" => {
-    let mut v = Vec::new();
-    for (x, y) in l {
-        let t = Reference::Unresolved(y.name, Some(y.position));
-        v.push(Data::empty(x.name, t, Some(x.position)));
-    }
-    v
-};
+DataDef: Data = <x:Identifier> ":" <t:TypeRef> => Data::empty(x.name, t, Some(x.position));
 
 //------------------------- Resource -------------------------
 
@@ -89,13 +84,8 @@ Resource: Vec<Resource> = {
     <v: ResourceBlock> => v,
 };
 
-ResourceSingle: Resource = "resource" <x:ResourceDef> => {
-    x
-};
-
-ResourceBlock: Vec<Resource> = "resource" "{" <l:ResourceDef*> "}" => {
-    l
-};
+ResourceSingle: Resource = "resource" <x:ResourceDef> => x;
+ResourceBlock: Vec<Resource> = "resource" "{" <l:ResourceDef*> "}" => l;
 
 ResourceDef: Resource = <x:Identifier> "{" <s:StateDef> <i:InitialDef> <t:Transitions> "}" => {
     let mut resource = Resource::empty(x.name, Some(x.position));
@@ -107,6 +97,10 @@ ResourceDef: Resource = <x:Identifier> "{" <s:StateDef> <i:InitialDef> <t:Transi
     resource
 };
 
+ResourceRef: Reference<ResourceId> = <x:Identifier> => Reference::Unresolved(x.name, Some(x.position));
+
+//------------------------- State -------------------------
+
 StateDef: Vec<State> = "state" "{" <l:Identifier*> "}" => {
     let mut v = Vec::new();
     for x in l {
@@ -115,20 +109,18 @@ StateDef: Vec<State> = "state" "{" <l:Identifier*> "}" => {
     v
 };
 
-InitialDef: Reference<StateId> = "initial" <i:Identifier> => {
-    Reference::Unresolved(i.name, Some(i.position))
-};
+InitialDef: Reference<StateId> = "initial" <s:StateRef> => s;
+
+StateRef: Reference<StateId> = <x:Identifier> => Reference::Unresolved(x.name, Some(x.position));
+
+//------------------------- Transition -------------------------
 
 Transitions: Transitions = {
     "transition" "all" => Transitions::All,
     "transition" "{" <l:Transition*> "}" => Transitions::List(l),
 };
 
-Transition: Transition = <s:Identifier> "->" <d:Identifier> => {
-    let src = Reference::Unresolved(s.name, Some(s.position));
-    let dst = Reference::Unresolved(d.name, Some(d.position));
-    Transition::new(src, dst)
-};
+Transition: Transition = <s:StateRef> "->" <d:StateRef> => Transition::new(s, d);
 
 //------------------------- Event -------------------------
 
@@ -137,21 +129,12 @@ Event: Vec<Event> = {
     <v: EventBlock> => v,
 };
 
-EventSingle: Event = "event" <e:EventDef> => {
-    e
-};
+EventSingle: Event = "event" <e:EventDef> => e;
+EventBlock: Vec<Event> = "event" "{" <l:EventDef*> "}" => l;
 
-EventBlock: Vec<Event> = "event" "{" <l:EventDef*> "}" => {
-    l
-};
+EventDef: Event = <x:Identifier> "{" <g:Guard?> <l:Effects> "}" => Event::empty(x.name, g, l, Some(x.position));
 
-EventDef: Event = <x:Identifier> "{" <g:Guard?> <l:Effects> "}" => {
-    Event::empty(x.name, g, l, Some(x.position))
-};
-
-Guard: Expr = "guard" <e:Expr> => {
-    e
-};
+Guard: Expr = "guard" <e:Expr> => e;
 
 //------------------------- Skill -------------------------
 
@@ -160,21 +143,50 @@ Skill: Vec<Skill> = {
     <v: SkillBlock> => v,
 };
 
-SkillSingle: Skill = "skill" <s:SkillDef> => {
-    s
-};
+SkillSingle: Skill = "skill" <s:SkillDef> => s;
+SkillBlock: Vec<Skill> = "skill" "{" <l:SkillDef*> "}" => l;
 
-SkillBlock: Vec<Skill> = "skill" "{" <l:SkillDef*> "}" => {
-    l
-};
-
-SkillDef: Skill = <x:Identifier> "{" <p:Precondition> "}" => {
+SkillDef: Skill = <x:Identifier> "{" <i:Input> <o:Output> <p:Precondition> <s:Start?> "}" => {
     let mut skill = Skill::empty(x.name, Some(x.position));
+    for x in i {
+        skill.add_input(x);
+    }
+    for x in o {
+        skill.add_output(x);
+    }
     for x in p {
         skill.add_precondition(x);
     }
+    if let Some(e) = s {
+        skill.set_start(e);
+    }
+    //
     skill
 };
+
+//------------------------- Input -------------------------
+
+Input: Vec<Input> = {
+    <v: InputSingle*> => v,
+    <v: InputBlock> => v,
+};
+
+InputSingle: Input = "input" <p:InputDef> => p;
+InputBlock: Vec<Input> = "input" "{" <l:InputDef*> "}" => l;
+
+InputDef: Input = <n:Identifier> ":" <t:TypeRef> => Input::empty(n.name, t, Some(n.position));
+
+//------------------------- Output -------------------------
+
+Output: Vec<Output> = {
+    <v: OutputSingle*> => v,
+    <v: OutputBlock> => v,
+};
+
+OutputSingle: Output = "output" <p:OutputDef> => p;
+OutputBlock: Vec<Output> = "output" "{" <l:OutputDef*> "}" => l;
+
+OutputDef: Output = <n:Identifier> ":" <t:TypeRef> => Output::empty(n.name, t, Some(n.position));
 
 //------------------------- Precondition -------------------------
 
@@ -183,18 +195,20 @@ Precondition: Vec<Precondition> = {
     <v: PreconditionBlock> => v,
 };
 
-PreconditionSingle: Precondition = "precondition" <p:PreconditionDef> => {
-    p
+PreconditionSingle: Precondition = "precondition" <p:PreconditionDef> => p;
+PreconditionBlock: Vec<Precondition> = "precondition" "{" <l:PreconditionDef*> "}" => l;
+
+PreconditionDef: Precondition = <n:Identifier> ":" <e:Expr> => Precondition::new(n.name, e, Some(n.position));
+
+//------------------------- Start -------------------------
+
+Start: Vec<Effect> = {
+    <v: StartSingle> => v,
+    <v: StartBlock> => v,
 };
 
-PreconditionBlock: Vec<Precondition> = "precondition" "{" <l:PreconditionDef*> "}" => {
-    l
-};
-
-PreconditionDef: Precondition = <n:Identifier> ":" <e:Expr> => {
-    Precondition::new(n.name, e, Some(n.position))
-};
-
+StartSingle: Vec<Effect> = "start"  <e:Effect> => vec![e];
+StartBlock: Vec<Effect> = "start" "{" <l:Effect*> "}" => l;
 
 //------------------------- Effect -------------------------
 
@@ -203,19 +217,10 @@ Effects: Vec<Effect> = {
     <v: EffectBlock> => v
 };
 
-EffectSingle: Vec<Effect> = "effect" <e:Effect> => {
-    vec![e]
-};
+EffectSingle: Vec<Effect> = "effect" <e:Effect> => vec![e];
+EffectBlock: Vec<Effect> = "effect" "{" <l:Effect*> "}" => l;
 
-EffectBlock: Vec<Effect> = "effect" "{" <l:Effect*> "}" => {
-    l
-};
-
-Effect: Effect = <r:Identifier> "->" <s:Identifier> => {
-    let resource = Reference::Unresolved(r.name, Some(r.position));
-    let state = Reference::Unresolved(s.name, Some(s.position));
-    Effect::new(resource, state)
-};
+Effect: Effect = <r:ResourceRef> "->" <s:StateRef> => Effect::new(r, s);
 
 //------------------------- Expr -------------------------
 
@@ -248,16 +253,8 @@ NotExpr: Expr = {
 Term: Expr = {
     "false" => Expr::False,
     "true" => Expr::True,
-    <r:Identifier> "==" <s:Identifier> => {
-        let resource = Reference::Unresolved(r.name, Some(r.position));
-        let state = Reference::Unresolved(s.name, Some(s.position));
-        Expr::ResourceEq(resource, state)
-    },
-    <r:Identifier> "!=" <s:Identifier> => {
-        let resource = Reference::Unresolved(r.name, Some(r.position));
-        let state = Reference::Unresolved(s.name, Some(s.position));
-        Expr::ResourceNe(resource, state)
-    },
+    <r:ResourceRef> "==" <s:StateRef> => Expr::ResourceEq(r, s),
+    <r:ResourceRef> "!=" <s:StateRef> => Expr::ResourceNe(r, s),
     "(" <Expr> ")",
 };
 
