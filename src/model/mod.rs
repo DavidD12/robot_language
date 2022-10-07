@@ -23,6 +23,11 @@ pub use transition::*;
 pub mod event;
 pub use event::*;
 
+pub mod skill;
+pub use skill::*;
+pub mod precondition;
+pub use precondition::*;
+
 pub mod effect;
 pub use effect::*;
 

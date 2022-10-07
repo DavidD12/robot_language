@@ -34,4 +34,8 @@ fn main() {
     check("examples/resource_2.rl");
 
     check("examples/event_1.rl");
+
+    check("examples/skill_1.rl");
+    check("examples/precondition_1.rl");
+    check("examples/precondition_2.rl");
 }

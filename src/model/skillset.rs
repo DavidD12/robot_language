@@ -16,6 +16,7 @@ pub struct Skillset {
     data: Vec<Data>,
     resources: Vec<Resource>,
     events: Vec<Event>,
+    skills: Vec<Skill>,
     position: Option<Position>,
 }
 
@@ -29,6 +30,7 @@ impl Skillset {
             data: Vec::new(),
             resources: Vec::new(),
             events: Vec::new(),
+            skills: Vec::new(),
             position,
         }
     }
@@ -146,6 +148,28 @@ impl Skillset {
         id
     }
 
+    //---------- Skill ----------
+
+    pub fn skills(&self) -> &Vec<Skill> {
+        &self.skills
+    }
+
+    pub fn get_skill(&self, id: SkillId) -> Option<&Skill> {
+        let SkillId(skillset_id, event_id) = id;
+        if self.id != skillset_id {
+            None
+        } else {
+            self.skills.get(event_id)
+        }
+    }
+
+    pub fn add_skill(&mut self, mut skill: Skill) -> SkillId {
+        let id = SkillId(self.id, self.skills.len());
+        skill.set_id(id);
+        self.skills.push(skill);
+        id
+    }
+
     //---------- Duplicate ----------
 
     pub fn names(&self, names: Vec<(String, Option<Position>)>) -> Vec<(String, Option<Position>)> {
@@ -195,18 +219,30 @@ impl Skillset {
 
     pub fn resolve_resource(&mut self) -> Result<(), RlError> {
         let map = self.resource_map();
+        // Event
         for x in self.events.iter_mut() {
+            x.resolve_resource(&map)?;
+        }
+        // Skill
+        for x in self.skills.iter_mut() {
             x.resolve_resource(&map)?;
         }
         Ok(())
     }
 
     pub fn resolve_state(&mut self) -> Result<(), RlError> {
+        // Resource
         for x in self.resources.iter_mut() {
             x.resolve_state()?;
         }
+        // Event
         let map = self.state_map();
         for x in self.events.iter_mut() {
+            x.resolve_state(&map)?;
+        }
+        // Skill
+        let map = self.state_map();
+        for x in self.skills.iter_mut() {
             x.resolve_state(&map)?;
         }
         Ok(())
@@ -243,6 +279,14 @@ impl ToLang for Skillset {
         if !self.events.is_empty() {
             s.push_str("\tevent {\n");
             for x in self.events.iter() {
+                s.push_str(&x.to_lang(model));
+            }
+            s.push_str("\t}\n");
+        }
+        // Skill
+        if !self.skills.is_empty() {
+            s.push_str("\tskill {\n");
+            for x in self.skills.iter() {
                 s.push_str(&x.to_lang(model));
             }
             s.push_str("\t}\n");

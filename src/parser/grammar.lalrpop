@@ -44,7 +44,7 @@ TypeBlock: Vec<RlType> = "type" "{" <l:(<Identifier>)*> "}" => {
 
 //------------------------- Skillset -------------------------
 
-Skillset: Skillset = "skillset" <x:Identifier> "{" <data:Data> <resources:Resource> <events:Event> "}" => {
+Skillset: Skillset = "skillset" <x:Identifier> "{" <data:Data> <resources:Resource> <events:Event> <skills:Skill> "}" => {
     let mut skillset = Skillset::empty(x.name, Some(x.position));
     for x in data {
         skillset.add_data(x);
@@ -54,6 +54,9 @@ Skillset: Skillset = "skillset" <x:Identifier> "{" <data:Data> <resources:Resour
     }
     for x in events {
         skillset.add_event(x);
+    }
+    for x in skills {
+        skillset.add_skill(x);
     }
     skillset
 };
@@ -149,6 +152,49 @@ EventDef: Event = <x:Identifier> "{" <g:Guard?> <l:Effects> "}" => {
 Guard: Expr = "guard" <e:Expr> => {
     e
 };
+
+//------------------------- Skill -------------------------
+
+Skill: Vec<Skill> = {
+    <v: SkillSingle*> => v,
+    <v: SkillBlock> => v,
+};
+
+SkillSingle: Skill = "skill" <s:SkillDef> => {
+    s
+};
+
+SkillBlock: Vec<Skill> = "skill" "{" <l:SkillDef*> "}" => {
+    l
+};
+
+SkillDef: Skill = <x:Identifier> "{" <p:Precondition> "}" => {
+    let mut skill = Skill::empty(x.name, Some(x.position));
+    for x in p {
+        skill.add_precondition(x);
+    }
+    skill
+};
+
+//------------------------- Precondition -------------------------
+
+Precondition: Vec<Precondition> = {
+    <v: PreconditionSingle*> => v,
+    <v: PreconditionBlock> => v,
+};
+
+PreconditionSingle: Precondition = "precondition" <p:PreconditionDef> => {
+    p
+};
+
+PreconditionBlock: Vec<Precondition> = "precondition" "{" <l:PreconditionDef*> "}" => {
+    l
+};
+
+PreconditionDef: Precondition = <n:Identifier> ":" <e:Expr> => {
+    Precondition::new(n.name, e, Some(n.position))
+};
+
 
 //------------------------- Effect -------------------------
 
