@@ -146,19 +146,40 @@ Skill: Vec<Skill> = {
 SkillSingle: Skill = "skill" <s:SkillDef> => s;
 SkillBlock: Vec<Skill> = "skill" "{" <l:SkillDef*> "}" => l;
 
-SkillDef: Skill = <x:Identifier> "{" <i:Input> <o:Output> <p:Precondition> <s:Start?> "}" => {
+SkillDef: Skill = <x:Identifier> "{" 
+    <inp:Input>
+    <out:Output>
+    <pre:Precondition>
+    <sta:Start?>
+    <inv:Invariant>
+    <int:Interrupt?>
+    <suc:Success>
+    <fai:Failure>
+    "}" => {
     let mut skill = Skill::empty(x.name, Some(x.position));
-    for x in i {
+    for x in inp {
         skill.add_input(x);
     }
-    for x in o {
+    for x in out {
         skill.add_output(x);
     }
-    for x in p {
+    for x in pre {
         skill.add_precondition(x);
     }
-    if let Some(e) = s {
+    if let Some(e) = sta {
         skill.set_start(e);
+    }
+    for x in inv {
+        skill.add_invariant(x);
+    }
+    if let Some(i) = int {
+        skill.set_interrupt(i);
+    }
+    for x in suc {
+        skill.add_success(x);
+    }
+    for x in fai {
+        skill.add_failure(x);
     }
     //
     skill
@@ -166,27 +187,23 @@ SkillDef: Skill = <x:Identifier> "{" <i:Input> <o:Output> <p:Precondition> <s:St
 
 //------------------------- Input -------------------------
 
-Input: Vec<Input> = {
+Input: Vec<Variable> = {
     <v: InputSingle*> => v,
     <v: InputBlock> => v,
 };
 
-InputSingle: Input = "input" <p:InputDef> => p;
-InputBlock: Vec<Input> = "input" "{" <l:InputDef*> "}" => l;
-
-InputDef: Input = <n:Identifier> ":" <t:TypeRef> => Input::empty(n.name, t, Some(n.position));
+InputSingle: Variable = "input" <v:Variable> => v;
+InputBlock: Vec<Variable> = "input" "{" <l:Variable*> "}" => l;
 
 //------------------------- Output -------------------------
 
-Output: Vec<Output> = {
+Output: Vec<Variable> = {
     <v: OutputSingle*> => v,
     <v: OutputBlock> => v,
 };
 
-OutputSingle: Output = "output" <p:OutputDef> => p;
-OutputBlock: Vec<Output> = "output" "{" <l:OutputDef*> "}" => l;
-
-OutputDef: Output = <n:Identifier> ":" <t:TypeRef> => Output::empty(n.name, t, Some(n.position));
+OutputSingle: Variable = "output" <v:Variable> => v;
+OutputBlock: Vec<Variable> = "output" "{" <l:Variable*> "}" => l;
 
 //------------------------- Precondition -------------------------
 
@@ -210,6 +227,71 @@ Start: Vec<Effect> = {
 StartSingle: Vec<Effect> = "start"  <e:Effect> => vec![e];
 StartBlock: Vec<Effect> = "start" "{" <l:Effect*> "}" => l;
 
+//------------------------- Invariant -------------------------
+
+Invariant: Vec<Invariant> = {
+    <v: InvariantSingle*> => v,
+    <v: InvariantBlock> => v,
+};
+
+InvariantSingle: Invariant = "invariant" <i:InvariantDef> => i;
+InvariantBlock: Vec<Invariant> = "invariant" "{" <v:InvariantDef*> "}" => v;
+
+InvariantDef: Invariant = <n:Identifier> "{" "guard" <e:Expr> <o:Effects?> "}" => {
+    let l = match o {
+        Some(v) => v,
+        None => Vec::new(),
+    };
+    Invariant::empty(n.name, e, l, Some(n.position))
+};
+
+//------------------------- Interrupt -------------------------
+
+Interrupt: Interrupt = <l:@L>"interrupt" "{" "interrupting" <b:BoolValue> <e:Effects> <p:Postcondition?> "}" => {
+    let position = Position::new(lookup, l);
+    Interrupt::new(b, e, p, Some(position))
+};
+
+//------------------------- Success -------------------------
+
+Success: Vec<Success> = {
+    <v: SuccessSingle*> => v,
+    <v: SuccessBlock> => v,
+};
+
+SuccessSingle: Success = "success" <i:SuccessDef> => i;
+SuccessBlock: Vec<Success> = "success" "{" <v:SuccessDef*> "}" => v;
+
+SuccessDef: Success = <n:Identifier> "{" <e:Effects?> <p:Postcondition?> "}" => {
+    let l = match e {
+        Some(v) => v,
+        None => Vec::new(),
+    };
+    Success::empty(n.name, l, p, Some(n.position))
+};
+
+//------------------------- Failure -------------------------
+
+Failure: Vec<Failure> = {
+    <v: FailureSingle*> => v,
+    <v: FailureBlock> => v,
+};
+
+FailureSingle: Failure = "failure" <i:FailureDef> => i;
+FailureBlock: Vec<Failure> = "failure" "{" <v:FailureDef*> "}" => v;
+
+FailureDef: Failure = <n:Identifier> "{" <e:Effects?> <p:Postcondition?> "}" => {
+    let l = match e {
+        Some(v) => v,
+        None => Vec::new(),
+    };
+    Failure::empty(n.name, l, p, Some(n.position))
+};
+
+//------------------------- Variable -------------------------
+
+Variable: Variable = <x:Identifier> ":" <t:TypeRef> => Variable::new(x.name, t, Some(x.position));
+
 //------------------------- Effect -------------------------
 
 Effects: Vec<Effect> = {
@@ -221,6 +303,17 @@ EffectSingle: Vec<Effect> = "effect" <e:Effect> => vec![e];
 EffectBlock: Vec<Effect> = "effect" "{" <l:Effect*> "}" => l;
 
 Effect: Effect = <r:ResourceRef> "->" <s:StateRef> => Effect::new(r, s);
+
+//------------------------- Postcondition -------------------------
+
+Postcondition: Expr = "postcondition" <e:Expr> => e;
+
+//------------------------- BoolValue -------------------------
+
+BoolValue: bool = {
+    "false" => false,
+    "true" => true,
+};
 
 //------------------------- Expr -------------------------
 

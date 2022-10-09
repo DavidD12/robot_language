@@ -13,10 +13,14 @@ impl Id for SkillId {
 pub struct Skill {
     id: SkillId,
     name: String,
-    inputs: Vec<Input>,
-    outputs: Vec<Output>,
+    inputs: Vec<Variable>,
+    outputs: Vec<Variable>,
     preconditions: Vec<Precondition>,
     start: Vec<Effect>,
+    invariants: Vec<Invariant>,
+    interrupt: Option<Interrupt>,
+    successes: Vec<Success>,
+    failures: Vec<Failure>,
     position: Option<Position>,
 }
 
@@ -31,6 +35,10 @@ impl Skill {
             outputs: Vec::new(),
             preconditions: Vec::new(),
             start: Vec::new(),
+            invariants: Vec::new(),
+            interrupt: None,
+            successes: Vec::new(),
+            failures: Vec::new(),
             position,
         }
     }
@@ -49,28 +57,22 @@ impl Skill {
 
     //---------- Input ----------
 
-    pub fn inputs(&self) -> &Vec<Input> {
+    pub fn inputs(&self) -> &Vec<Variable> {
         &self.inputs
     }
 
-    pub fn add_input(&mut self, mut input: Input) -> InputId {
-        let id = InputId(self.id, self.inputs.len());
-        input.set_id(id);
+    pub fn add_input(&mut self, input: Variable) {
         self.inputs.push(input);
-        id
     }
 
     //---------- Output ----------
 
-    pub fn outputs(&self) -> &Vec<Output> {
+    pub fn outputs(&self) -> &Vec<Variable> {
         &self.outputs
     }
 
-    pub fn add_output(&mut self, mut output: Output) -> OutputId {
-        let id = OutputId(self.id, self.outputs.len());
-        output.set_id(id);
+    pub fn add_output(&mut self, output: Variable) {
         self.outputs.push(output);
-        id
     }
 
     //---------- Precondition ----------
@@ -93,6 +95,55 @@ impl Skill {
         self.start = effects;
     }
 
+    //---------- Invariant ----------
+
+    pub fn invariants(&self) -> &Vec<Invariant> {
+        &self.invariants
+    }
+
+    pub fn add_invariant(&mut self, mut invariant: Invariant) -> InvariantId {
+        let id = InvariantId(self.id, self.invariants.len());
+        invariant.set_id(id);
+        self.invariants.push(invariant);
+        id
+    }
+
+    //---------- Interrupt ----------
+
+    pub fn interrupt(&self) -> &Option<Interrupt> {
+        &self.interrupt
+    }
+
+    pub fn set_interrupt(&mut self, interrupt: Interrupt) {
+        self.interrupt = Some(interrupt);
+    }
+
+    //---------- Success ----------
+
+    pub fn successes(&self) -> &Vec<Success> {
+        &self.successes
+    }
+
+    pub fn add_success(&mut self, mut success: Success) -> SuccessId {
+        let id = SuccessId(self.id, self.successes.len());
+        success.set_id(id);
+        self.successes.push(success);
+        id
+    }
+
+    //---------- Failure ----------
+
+    pub fn failures(&self) -> &Vec<Failure> {
+        &self.failures
+    }
+
+    pub fn add_failure(&mut self, mut failure: Failure) -> FailureId {
+        let id = FailureId(self.id, self.failures.len());
+        failure.set_id(id);
+        self.failures.push(failure);
+        id
+    }
+
     //---------- ----------
 
     pub fn position(&self) -> Option<Position> {
@@ -104,15 +155,27 @@ impl Skill {
     pub fn names(&self) -> Vec<(String, Option<Position>)> {
         let mut v = Vec::new();
         // Input
-        for x in self.inputs.iter() {
-            v.push((x.name().into(), x.position()));
-        }
+        // for x in self.inputs.iter() {
+        //     v.push((x.name().into(), x.position()));
+        // }
         // Output
-        for x in self.outputs.iter() {
-            v.push((x.name().into(), x.position()));
-        }
+        // for x in self.outputs.iter() {
+        //     v.push((x.name().into(), x.position()));
+        // }
         // Precondition
         for x in self.preconditions.iter() {
+            v.push((x.name().into(), x.position()));
+        }
+        // Invariant
+        for x in self.invariants.iter() {
+            v.push((x.name().into(), x.position()));
+        }
+        // Success
+        for x in self.successes.iter() {
+            v.push((x.name().into(), x.position()));
+        }
+        // Failure
+        for x in self.failures.iter() {
             v.push((x.name().into(), x.position()));
         }
         //
@@ -142,6 +205,22 @@ impl Skill {
         for x in self.start.iter_mut() {
             x.resolve_resource(map)?;
         }
+        // Invariant
+        for x in self.invariants.iter_mut() {
+            x.resolve_resource(map)?;
+        }
+        // Interrupt
+        if let Some(i) = &mut self.interrupt {
+            i.resolve_resource(map)?;
+        }
+        // Success
+        for x in self.successes.iter_mut() {
+            x.resolve_resource(map)?;
+        }
+        // Failure
+        for x in self.failures.iter_mut() {
+            x.resolve_resource(map)?;
+        }
         Ok(())
     }
 
@@ -152,6 +231,22 @@ impl Skill {
         }
         // Start
         for x in self.start.iter_mut() {
+            x.resolve_state(map)?;
+        }
+        // Invariant
+        for x in self.invariants.iter_mut() {
+            x.resolve_state(map)?;
+        }
+        // Interrupt
+        if let Some(i) = &mut self.interrupt {
+            i.resolve_state(map)?;
+        }
+        // Success
+        for x in self.successes.iter_mut() {
+            x.resolve_state(map)?;
+        }
+        // Failure
+        for x in self.failures.iter_mut() {
             x.resolve_state(map)?;
         }
         Ok(())
@@ -182,7 +277,7 @@ impl ToLang for Skill {
         if !self.preconditions.is_empty() {
             s.push_str("\t\t\tprecondition {\n");
             for x in self.preconditions.iter() {
-                s.push_str(&format!("\t\t\t\t{}\n", x.to_lang(model)))
+                s.push_str(&format!("\t\t\t\t{}", x.to_lang(model)))
             }
             s.push_str("\t\t\t}\n");
         }
@@ -191,6 +286,34 @@ impl ToLang for Skill {
             s.push_str("\t\t\tstart {\n");
             for x in self.start.iter() {
                 s.push_str(&format!("\t\t\t\t{}\n", x.to_lang(model)))
+            }
+            s.push_str("\t\t\t}\n");
+        }
+        // Invariant
+        if !self.invariants.is_empty() {
+            s.push_str("\t\t\tinvariant {\n");
+            for x in self.invariants.iter() {
+                s.push_str(&format!("\t\t\t\t{}", x.to_lang(model)))
+            }
+            s.push_str("\t\t\t}\n");
+        }
+        // Interrupt
+        if let Some(interrupt) = &self.interrupt {
+            s.push_str(&interrupt.to_lang(model));
+        }
+        // Success
+        if !self.successes.is_empty() {
+            s.push_str("\t\t\tsuccess {\n");
+            for x in self.successes.iter() {
+                s.push_str(&format!("\t\t\t\t{}", x.to_lang(model)))
+            }
+            s.push_str("\t\t\t}\n");
+        }
+        // Failure
+        if !self.failures.is_empty() {
+            s.push_str("\t\t\tfailure {\n");
+            for x in self.failures.iter() {
+                s.push_str(&format!("\t\t\t\t{}", x.to_lang(model)))
             }
             s.push_str("\t\t\t}\n");
         }

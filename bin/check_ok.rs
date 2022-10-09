@@ -41,4 +41,8 @@ fn main() {
     check("examples/input_output_1.rl");
     check("examples/start_1.rl");
     check("examples/start_2.rl");
+    check("examples/invariant_1.rl");
+    check("examples/invariant_2.rl");
+    check("examples/interrupt_1.rl");
+    check("examples/terminate_1.rl");
 }
