@@ -18,6 +18,7 @@ pub struct Skill {
     preconditions: Vec<Precondition>,
     start: Vec<Effect>,
     invariants: Vec<Invariant>,
+    progress: Option<Progress>,
     interrupt: Option<Interrupt>,
     successes: Vec<Success>,
     failures: Vec<Failure>,
@@ -36,6 +37,7 @@ impl Skill {
             preconditions: Vec::new(),
             start: Vec::new(),
             invariants: Vec::new(),
+            progress: None,
             interrupt: None,
             successes: Vec::new(),
             failures: Vec::new(),
@@ -106,6 +108,16 @@ impl Skill {
         invariant.set_id(id);
         self.invariants.push(invariant);
         id
+    }
+
+    //---------- Progress ----------
+
+    pub fn progress(&self) -> &Option<Progress> {
+        &self.progress
+    }
+
+    pub fn set_progress(&mut self, progress: Progress) {
+        self.progress = Some(progress)
     }
 
     //---------- Interrupt ----------
@@ -192,6 +204,10 @@ impl Skill {
         // Output
         for x in self.outputs.iter_mut() {
             x.resolve_type(map)?;
+        }
+        // Progress
+        if let Some(progress) = &mut self.progress {
+            progress.resolve_type(map)?;
         }
         Ok(())
     }
@@ -296,6 +312,10 @@ impl ToLang for Skill {
                 s.push_str(&format!("\t\t\t\t{}", x.to_lang(model)))
             }
             s.push_str("\t\t\t}\n");
+        }
+        // Progress
+        if let Some(progress) = &self.progress {
+            s.push_str(&progress.to_lang(model));
         }
         // Interrupt
         if let Some(interrupt) = &self.interrupt {

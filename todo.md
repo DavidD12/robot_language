@@ -1,3 +1,4 @@
 - check duplicate transitions
 - check duplicate effects
 - remove find methods ?
+- check input (resp. output, progress) unicity

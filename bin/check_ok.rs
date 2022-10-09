@@ -45,4 +45,5 @@ fn main() {
     check("examples/invariant_2.rl");
     check("examples/interrupt_1.rl");
     check("examples/terminate_1.rl");
+    check("examples/progress_1.rl");
 }

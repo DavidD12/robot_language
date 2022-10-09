@@ -2,6 +2,7 @@
 use crate::model::*;
 use super::*;
 use line_col::LineColLookup;
+use std::time::Duration;
 
 grammar(lookup: &LineColLookup<'input>, model: &mut Model);
 
@@ -152,6 +153,7 @@ SkillDef: Skill = <x:Identifier> "{"
     <pre:Precondition>
     <sta:Start?>
     <inv:Invariant>
+    <pro:Progress?>
     <int:Interrupt?>
     <suc:Success>
     <fai:Failure>
@@ -171,6 +173,9 @@ SkillDef: Skill = <x:Identifier> "{"
     }
     for x in inv {
         skill.add_invariant(x);
+    }
+    if let Some(progress) = pro {
+        skill.set_progress(progress);
     }
     if let Some(i) = int {
         skill.set_interrupt(i);
@@ -251,6 +256,21 @@ Interrupt: Interrupt = <l:@L>"interrupt" "{" "interrupting" <b:BoolValue> <e:Eff
     let position = Position::new(lookup, l);
     Interrupt::new(b, e, p, Some(position))
 };
+
+//------------------------- Progress -------------------------
+
+Progress: Progress = <l:@L>"progress" "{" "period" <p:Duration> <m:Message> "}" => {
+    let position = Position::new(lookup, l);
+    Progress::new(p, m, Some(position))
+};
+
+Message: Vec<Variable> = {
+    <v: MessageSingle*> => v,
+    <v: MessageBlock> => v,
+};
+
+MessageSingle: Variable = "message" <v:Variable> => v;
+MessageBlock: Vec<Variable> = "message" "{" <v:Variable*> "}" => v;
 
 //------------------------- Success -------------------------
 
@@ -352,6 +372,13 @@ Term: Expr = {
 };
 
 //------------------------- Lexer -------------------------
+
+Duration: Duration = {
+    <i:UInteger> "sec" => Duration::from_secs(i),
+    <i:UInteger> "ms" => Duration::from_millis(i),
+};
+
+UInteger: u64 = <i:r"[1-9][0-9]*"> => i.parse::<u64>().unwrap();
 
 Identifier: Identifier = <l:@L> <s:r"[a-zA-Z_][a-zA-Z_0-9]*"> <r:@R> => {
     Identifier::new(lookup, s, l)
