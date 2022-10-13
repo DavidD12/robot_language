@@ -1,35 +1,38 @@
-use z3::ast::Datatype;
-
-use crate::model::*;
+use crate::{model::*, Solution};
 
 // use z3::ast::*;
 // use z3::{Config, Context, Solver, Sort};
+use z3::ast::Ast;
 
 use std::collections::HashMap;
 
 pub struct Smt<'a> {
-    model: &'a Model,
+    skillset: &'a Skillset,
     //
     _cfg: &'a z3::Config,
     ctx: &'a z3::Context,
     solver: &'a z3::Solver<'a>,
     //
     resource_sort: HashMap<ResourceId, z3::DatatypeSort<'a>>,
+    resource_current: HashMap<ResourceId, z3::ast::Datatype<'a>>,
+    resource_next: HashMap<ResourceId, z3::ast::Datatype<'a>>,
 }
 
 impl<'a> Smt<'a> {
     pub fn empty(
-        model: &'a Model,
+        skillset: &'a Skillset,
         cfg: &'a z3::Config,
         ctx: &'a z3::Context,
         solver: &'a z3::Solver,
     ) -> Self {
         Self {
-            model,
+            skillset,
             _cfg: cfg,
             ctx,
             solver,
             resource_sort: HashMap::new(),
+            resource_current: HashMap::new(),
+            resource_next: HashMap::new(),
         }
     }
 
@@ -38,46 +41,159 @@ impl<'a> Smt<'a> {
         for x in resource.states().iter() {
             builder = builder.variant(x.name(), Vec::new());
         }
-        let sort = builder.finish();
-        self.resource_sort.insert(resource.id(), sort);
+        let datatype = builder.finish();
+        self.resource_sort.insert(resource.id(), datatype);
     }
 
-    fn add_resources(&mut self, skillset: &Skillset) {
+    fn add_resource_current(&mut self, resource: &Resource) {
+        let datatype = &self.resource_sort[&resource.id()];
+        let current = z3::ast::Datatype::new_const(
+            self.ctx,
+            format!("resource_{}_current", resource.name()),
+            &datatype.sort,
+        );
+        self.resource_current.insert(resource.id(), current);
+    }
+
+    fn add_resource_next(&mut self, resource: &Resource) {
+        let datatype = &self.resource_sort[&resource.id()];
+        let current = z3::ast::Datatype::new_const(
+            self.ctx,
+            format!("resource_{}_next", resource.name()),
+            &datatype.sort,
+        );
+        self.resource_current.insert(resource.id(), current);
+    }
+
+    fn add_resources(&mut self, skillset: &Skillset, next: bool) {
         for x in skillset.resources().iter() {
             self.add_resource(x);
+            self.add_resource_current(x);
+            if next {
+                self.add_resource_next(x);
+            }
         }
     }
 
-    fn get_state(&self, state: &State) -> Datatype {
-        let StateId(resource_id, id) = state.id();
-        let sort = self.resource_sort.get(&resource_id).unwrap();
-        sort.variants[id]
+    fn get_state(&self, id: StateId) -> z3::ast::Datatype {
+        let StateId(resource_id, id) = id;
+        let datatype = self.resource_sort.get(&resource_id).unwrap();
+        datatype.variants[id]
             .constructor
             .apply(&[])
             .as_datatype()
             .unwrap()
     }
 
-    fn exists_transition(&self, x: &State, y: &State) -> z3::ast::Bool {
-        // if x.id() == y.id() {
-        //     return z3::ast::Bool::from_bool(self.ctx, true);
-        // }
-        // let StateId(x_res_id, _) = x.id();
-        // let StateId(y_res_id, _) = y.id();
-        // if x_res_id != y_res_id {
-        //     return z3::ast::Bool::from_bool(self.ctx, false);
-        // }
-        // let resource = self.model.get_resource(x_res_id).unwrap();
-        // match resource.transitions() {
-        //     Transitions::All => z3::ast::Bool::from_bool(self.ctx, true),
-        //     Transitions::List(l) => {
-        //         for transition in l.iter() {
-        //             if x == transition.src() && y == transition.dst() {
-        //                 return z3::ast::Bool::from_bool(self.ctx, true);
-        //             }
-        //         }
-        //     }
-        // }
-        z3::ast::Bool::from_bool(self.ctx, false)
+    fn exists_transition(
+        &'a self,
+        resource: ResourceId,
+        src: z3::ast::Datatype<'a>,
+        dst: z3::ast::Datatype<'a>,
+    ) -> z3::ast::Bool {
+        let resource = self.skillset.get(resource).unwrap();
+        match resource.transitions() {
+            Transitions::All => z3::ast::Bool::from_bool(self.ctx, true),
+            Transitions::List(transitions) => {
+                let mut v = vec![src._eq(&dst)];
+                for tr in transitions {
+                    let x = self.get_state(tr.src().resolved());
+                    let y = self.get_state(tr.dst().resolved());
+                    let a = vec![src._eq(&x), dst._eq(&y)];
+                    let b = z3::ast::Bool::and(self.ctx, &a.iter().collect::<Vec<_>>());
+                    v.push(b);
+                }
+                z3::ast::Bool::or(self.ctx, &v.iter().collect::<Vec<_>>())
+            }
+        }
+    }
+
+    fn expr_to_smt(&self, expr: &Expr, next: bool) -> z3::ast::Bool {
+        match expr {
+            Expr::True => z3::ast::Bool::from_bool(self.ctx, true),
+            Expr::False => z3::ast::Bool::from_bool(self.ctx, true),
+            Expr::ResourceEq(r, s) => {
+                let r_id = r.resolved();
+                let s_id = s.resolved();
+                let resource_state = if next {
+                    &self.resource_next[&r_id]
+                } else {
+                    &self.resource_current[&r_id]
+                };
+                let state = self.get_state(s_id);
+                resource_state._eq(&state)
+            }
+            Expr::ResourceNe(r, s) => {
+                let r_id = r.resolved();
+                let s_id = s.resolved();
+                let resource_state = if next {
+                    &self.resource_next[&r_id]
+                } else {
+                    &self.resource_current[&r_id]
+                };
+                let state = self.get_state(s_id);
+                z3::ast::Bool::not(&resource_state._eq(&state))
+            }
+            Expr::Not(e) => z3::ast::Bool::not(&self.expr_to_smt(e, next)),
+            Expr::And(l, r) => z3::ast::Bool::and(
+                self.ctx,
+                &[&self.expr_to_smt(l, next), &self.expr_to_smt(r, next)],
+            ),
+            Expr::Or(l, r) => z3::ast::Bool::or(
+                self.ctx,
+                &[&self.expr_to_smt(l, next), &self.expr_to_smt(r, next)],
+            ),
+            Expr::Implies(l, r) => {
+                z3::ast::Bool::implies(&self.expr_to_smt(l, next), &self.expr_to_smt(r, next))
+            }
+        }
+    }
+
+    fn check_effects(&self, effects: &Vec<Effect>) -> z3::ast::Bool {
+        let v = effects
+            .iter()
+            .map(|x| self.check_effect(x))
+            .collect::<Vec<_>>();
+        z3::ast::Bool::and(self.ctx, &v.iter().collect::<Vec<_>>())
+    }
+
+    fn check_effect(&self, effect: &Effect) -> z3::ast::Bool {
+        let resource = self.skillset.get(effect.resource().resolved()).unwrap();
+        let r = self.resource_current[&resource.id()].clone();
+        let s = self.get_state(effect.state().resolved());
+        self.exists_transition(resource.id(), r, s)
+    }
+
+    fn apply_effects(&self, effects: &Vec<Effect>) -> z3::ast::Bool {
+        let mut changed = Vec::new();
+        let mut v = Vec::new();
+        // Changed
+        for e in effects.iter() {
+            let resource_id = e.resource().resolved();
+            let r = &self.resource_next[&resource_id];
+            let s = self.get_state(e.state().resolved());
+            v.push(r._eq(&s));
+            changed.push(resource_id)
+        }
+        // Unchanged
+        for resource in self.skillset.resources() {
+            let resource_id = resource.id();
+            if !changed.contains(&resource_id) {
+                let current = &self.resource_current[&resource_id];
+                let next = &self.resource_next[&resource_id];
+                v.push(current._eq(&next))
+            }
+        }
+        z3::ast::Bool::and(self.ctx, &v.iter().collect::<Vec<_>>())
+    }
+
+    fn get_solution(self, model: z3::Model, next: bool) -> Solution {
+        let mut solution = Solution::empty();
+        for resource in self.skillset.resources().iter() {
+            let state = model.eval(&self.resource_current[&resource.id()], true);
+            // TODO
+            todo!()
+        }
+        solution
     }
 }

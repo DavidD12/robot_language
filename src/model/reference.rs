@@ -7,6 +7,15 @@ pub enum Reference<I: Id> {
     Resolved(I),
 }
 
+impl<I: Id> Reference<I> {
+    pub fn resolved(&self) -> I {
+        match self {
+            Reference::Unresolved(_, _) => panic!("reference must be resolved"),
+            Reference::Resolved(id) => *id,
+        }
+    }
+}
+
 impl ToLang for Reference<TypeId> {
     fn to_lang(&self, model: &crate::Model) -> String {
         match self {
