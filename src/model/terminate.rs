@@ -51,28 +51,12 @@ impl<I: TerminateId> Terminate<I> {
         }
     }
 
-    pub fn id(&self) -> I {
-        self.id
-    }
-
-    pub fn set_id(&mut self, id: I) {
-        self.id = id;
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
     pub fn effects(&self) -> &Vec<Effect> {
         &self.effects
     }
 
     pub fn postcondition(&self) -> &Option<Expr> {
         &self.postcondition
-    }
-
-    pub fn position(&self) -> Option<Position> {
-        self.position
     }
 
     //---------- Resolve ----------
@@ -98,6 +82,34 @@ impl<I: TerminateId> Terminate<I> {
     }
 }
 
+impl Named<SuccessId> for Success {
+    fn id(&self) -> SuccessId {
+        self.id
+    }
+    fn set_id(&mut self, id: SuccessId) {
+        self.id = id;
+    }
+    fn name(&self) -> &str {
+        &self.name
+    }
+    fn position(&self) -> Option<Position> {
+        self.position
+    }
+}
+impl Named<FailureId> for Failure {
+    fn id(&self) -> FailureId {
+        self.id
+    }
+    fn set_id(&mut self, id: FailureId) {
+        self.id = id;
+    }
+    fn name(&self) -> &str {
+        &self.name
+    }
+    fn position(&self) -> Option<Position> {
+        self.position
+    }
+}
 impl<I: TerminateId> ToLang for Terminate<I> {
     fn to_lang(&self, model: &Model) -> String {
         let mut s = format!("{} {{\n", self.name);

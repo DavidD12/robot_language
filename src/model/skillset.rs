@@ -79,15 +79,6 @@ impl Skillset {
         id
     }
 
-    pub fn find_resource(&self, name: &str) -> Option<ResourceId> {
-        for x in self.resources.iter() {
-            if x.name() == name {
-                return Some(x.id());
-            }
-        }
-        None
-    }
-
     pub fn resource_map(&self) -> HashMap<String, ResourceId> {
         let mut map = HashMap::new();
         for x in self.resources.iter() {
@@ -160,41 +151,87 @@ impl Skillset {
 
     //---------- Duplicate ----------
 
-    pub fn names(&self) -> Vec<Naming> {
+    // pub fn names(&self) -> Vec<Naming> {
+    //     let mut v = Vec::new();
+    //     // Data
+    //     for x in self.data.iter() {
+    //         v.push((x.name().into(), x.position()));
+    //     }
+    //     // Resource
+    //     for x in self.resources.iter() {
+    //         v.push((x.name().into(), x.position()));
+    //         v.extend(x.names());
+    //     }
+    //     // Event
+    //     for x in self.events.iter() {
+    //         v.push((x.name().into(), x.position()));
+    //     }
+    //     // Skill
+    //     for x in self.skills.iter() {
+    //         v.push((x.name().into(), x.position()));
+    //     }
+    //     v
+    // }
+
+    pub fn data_naming(&self) -> Vec<Naming> {
+        self.data.iter().map(|x| x.naming()).collect()
+    }
+    pub fn resource_naming(&self) -> Vec<Naming> {
         let mut v = Vec::new();
-        // Data
-        for x in self.data.iter() {
-            v.push((x.name().into(), x.position()));
-        }
-        // Resource
         for x in self.resources.iter() {
             v.push((x.name().into(), x.position()));
             v.extend(x.names());
         }
-        // Event
-        for x in self.events.iter() {
-            v.push((x.name().into(), x.position()));
-        }
-        // Skill
-        for x in self.skills.iter() {
-            v.push((x.name().into(), x.position()));
-        }
         v
     }
+    pub fn event_naming(&self) -> Vec<Naming> {
+        self.events.iter().map(|x| x.naming()).collect()
+    }
+    pub fn skill_naming(&self) -> Vec<Naming> {
+        self.skills.iter().map(|x| x.naming()).collect()
+    }
 
-    pub fn duplicate(&self, container_names: &Vec<Naming>) -> Result<(), RlError> {
-        let mut global_names: Vec<Naming> = container_names
-            .iter()
-            .cloned()
-            .chain(self.names().iter().cloned())
-            .collect();
-        global_names.extend(self.names());
-        check_duplicate(&global_names)?;
+    pub fn duplicate(&self, model: &Model) -> Result<(), RlError> {
+        let types = model.type_naming();
+
+        // Data
+        check_duplicate(
+            types
+                .clone()
+                .into_iter()
+                .chain(self.data_naming().into_iter())
+                .collect(),
+        )?;
+        // Resource
+        check_duplicate(
+            types
+                .clone()
+                .into_iter()
+                .chain(self.resource_naming().into_iter())
+                .collect(),
+        )?;
+        // Event
+        check_duplicate(
+            types
+                .clone()
+                .into_iter()
+                .chain(self.event_naming().into_iter())
+                .collect(),
+        )?;
+        // Skill
+        check_duplicate(
+            types
+                .clone()
+                .into_iter()
+                .chain(self.skill_naming().into_iter())
+                .collect(),
+        )?;
 
         // Skill
         for x in self.skills.iter() {
-            // x.duplicate(&global_names)?;
+            x.duplicate(model)?;
         }
+
         Ok(())
     }
 
@@ -259,6 +296,39 @@ impl Named<SkillsetId> for Skillset {
     }
 }
 
+//------------------------- Get From Id -------------------------
+
+impl GetFromId<DataId, Data> for Skillset {
+    fn get(&self, id: DataId) -> Option<&Data> {
+        self.get_data(id)
+    }
+}
+impl GetFromId<ResourceId, Resource> for Skillset {
+    fn get(&self, id: ResourceId) -> Option<&Resource> {
+        self.get_resource(id)
+    }
+}
+impl GetFromId<EventId, Event> for Skillset {
+    fn get(&self, id: EventId) -> Option<&Event> {
+        self.get_event(id)
+    }
+}
+impl GetFromId<SkillId, Skill> for Skillset {
+    fn get(&self, id: SkillId) -> Option<&Skill> {
+        self.get_skill(id)
+    }
+}
+
+impl GetFromId<StateId, State> for Skillset {
+    fn get(&self, id: StateId) -> Option<&State> {
+        let StateId(resource_id, _) = id;
+        let resource = self.get(resource_id)?;
+        resource.get(id)
+    }
+}
+
+//------------------------- ToLang -------------------------
+
 impl ToLang for Skillset {
     fn to_lang(&self, model: &Model) -> String {
         let mut s = String::new();
@@ -300,6 +370,8 @@ impl ToLang for Skillset {
         s
     }
 }
+
+//------------------------- Display -------------------------
 
 impl std::fmt::Display for Skillset {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

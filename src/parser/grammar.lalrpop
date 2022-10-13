@@ -220,7 +220,7 @@ Precondition: Vec<Precondition> = {
 PreconditionSingle: Precondition = "precondition" <p:PreconditionDef> => p;
 PreconditionBlock: Vec<Precondition> = "precondition" "{" <l:PreconditionDef*> "}" => l;
 
-PreconditionDef: Precondition = <n:Identifier> ":" <e:Expr> => Precondition::new(n.name, e, Some(n.position));
+PreconditionDef: Precondition = <n:Identifier> ":" <e:Expr> => Precondition::empty(n.name, e, Some(n.position));
 
 //------------------------- Start -------------------------
 

@@ -107,43 +107,43 @@ skillset uav {
 
     skill goto_sol_1 {
         precondition {
-            has_authority_1: authority == Drone
-            in_air_1       : flight_status != OnGround
+            has_authority: authority == Drone
+            in_air       : flight_status != OnGround
         }
         start flight_status -> Moving
         invariant {
-            keep_authority_1 {
+            keep_authority {
                 guard authority == Drone
             }
-            moving_1 {
+            moving {
                 guard flight_status == Moving
             }
         }
-        success ok_1 {
+        success ok {
             effect flight_status -> Hovering
         }
-        failure ko_1 {}
+        failure ko {}
     }
 
     skill goto_sol_2 {
         precondition {
-            has_authority_2: authority != Pilot
-            in_air_2       : flight_status != OnGround
+            has_authority: authority != Pilot
+            in_air       : flight_status != OnGround
         }
         start {
             flight_status -> Moving
             authority -> Drone
         }
         invariant {
-            keep_authority_2 {
+            keep_authority {
                 guard authority == Drone
             }
-            moving_2 {
+            moving {
                 guard flight_status == Moving
             }
         }
-        success ok_2 {
+        success ok {
             effect flight_status -> Hovering
         }
-        failure ko_2 {}
+        failure ko {}
     }}

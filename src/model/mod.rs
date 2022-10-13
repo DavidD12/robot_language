@@ -61,7 +61,7 @@ pub trait Id: Clone + Copy + PartialEq + Eq + core::hash::Hash + std::fmt::Debug
     fn empty() -> Self;
 }
 
-pub trait GetFromId<I: Id, T: Named<I>> {
+pub trait GetFromId<I: Id, T> {
     fn get(&self, i: I) -> Option<&T>;
 }
 
@@ -79,7 +79,7 @@ pub trait Named<I: Id> {
 
 pub type Naming = (String, Option<Position>);
 
-pub fn check_duplicate(names: &Vec<Naming>) -> Result<(), RlError> {
+pub fn check_duplicate(names: Vec<Naming>) -> Result<(), RlError> {
     for (i, (n1, p1)) in names.iter().enumerate() {
         for (n2, p2) in names.iter().skip(i + 1) {
             if n1 == n2 {

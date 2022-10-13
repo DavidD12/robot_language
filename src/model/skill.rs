@@ -71,8 +71,11 @@ impl Skill {
         &self.preconditions
     }
 
-    pub fn add_precondition(&mut self, precondition: Precondition) {
-        self.preconditions.push(precondition)
+    pub fn add_precondition(&mut self, mut precondition: Precondition) -> PreconditionId {
+        let id = PreconditionId(self.id, self.preconditions.len());
+        precondition.set_id(id);
+        self.preconditions.push(precondition);
+        id
     }
 
     //---------- Start ----------
@@ -146,34 +149,84 @@ impl Skill {
 
     //---------- Duplicate ----------
 
-    pub fn names(&self) -> Vec<(String, Option<Position>)> {
-        let mut v = Vec::new();
+    pub fn input_naming(&self) -> Vec<Naming> {
+        self.inputs
+            .iter()
+            .map(|x| (x.name().into(), x.position()))
+            .collect()
+    }
+    pub fn output_naming(&self) -> Vec<Naming> {
+        self.outputs
+            .iter()
+            .map(|x| (x.name().into(), x.position()))
+            .collect()
+    }
+    pub fn precondition_naming(&self) -> Vec<Naming> {
+        self.preconditions.iter().map(|x| x.naming()).collect()
+    }
+    pub fn invariant_naming(&self) -> Vec<Naming> {
+        self.invariants.iter().map(|x| x.naming()).collect()
+    }
+    pub fn success_naming(&self) -> Vec<Naming> {
+        self.successes.iter().map(|x| x.naming()).collect()
+    }
+    pub fn failure_naming(&self) -> Vec<Naming> {
+        self.failures.iter().map(|x| x.naming()).collect()
+    }
+
+    pub fn duplicate(&self, model: &Model) -> Result<(), RlError> {
+        let types = model.type_naming();
+
         // Input
-        // for x in self.inputs.iter() {
-        //     v.push((x.name().into(), x.position()));
-        // }
+        check_duplicate(
+            types
+                .clone()
+                .into_iter()
+                .chain(self.input_naming().into_iter())
+                .collect(),
+        )?;
         // Output
-        // for x in self.outputs.iter() {
-        //     v.push((x.name().into(), x.position()));
-        // }
+        check_duplicate(
+            types
+                .clone()
+                .into_iter()
+                .chain(self.output_naming().into_iter())
+                .collect(),
+        )?;
         // Precondition
-        for x in self.preconditions.iter() {
-            v.push((x.name().into(), x.position()));
-        }
+        check_duplicate(
+            types
+                .clone()
+                .into_iter()
+                .chain(self.precondition_naming().into_iter())
+                .collect(),
+        )?;
         // Invariant
-        for x in self.invariants.iter() {
-            v.push((x.name().into(), x.position()));
-        }
+        check_duplicate(
+            types
+                .clone()
+                .into_iter()
+                .chain(self.invariant_naming().into_iter())
+                .collect(),
+        )?;
         // Success
-        for x in self.successes.iter() {
-            v.push((x.name().into(), x.position()));
-        }
+        check_duplicate(
+            types
+                .clone()
+                .into_iter()
+                .chain(self.success_naming().into_iter())
+                .collect(),
+        )?;
         // Failure
-        for x in self.failures.iter() {
-            v.push((x.name().into(), x.position()));
-        }
-        //
-        v
+        check_duplicate(
+            types
+                .clone()
+                .into_iter()
+                .chain(self.failure_naming().into_iter())
+                .collect(),
+        )?;
+
+        Ok(())
     }
 
     //---------- Resolve ----------

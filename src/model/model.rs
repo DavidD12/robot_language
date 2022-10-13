@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use super::*;
-use crate::parser::{Position, RlError};
+use crate::parser::RlError;
 
 pub struct Model {
     types: Vec<RlType>,
@@ -34,15 +34,6 @@ impl Model {
         self.types.get(index)
     }
 
-    pub fn find_type(&self, name: &str) -> Option<TypeId> {
-        for x in self.types.iter() {
-            if x.name() == name {
-                return Some(x.id());
-            }
-        }
-        None
-    }
-
     pub fn type_map(&self) -> HashMap<String, TypeId> {
         let mut map = HashMap::new();
         for x in self.types.iter() {
@@ -69,58 +60,24 @@ impl Model {
         self.skillsets.get(index)
     }
 
-    pub fn find_skillset(&self, name: &str) -> Option<SkillsetId> {
-        for x in self.skillsets.iter() {
-            if x.name() == name {
-                return Some(x.id());
-            }
-        }
-        None
-    }
-
-    //---------- Data ----------
-
-    pub fn get_data(&self, id: DataId) -> Option<&Data> {
-        let DataId(skillset_id, _) = id;
-        let skillset = self.get_skillset(skillset_id)?;
-        skillset.get_data(id)
-    }
-
-    //---------- Resource ----------
-
-    pub fn get_resource(&self, id: ResourceId) -> Option<&Resource> {
-        let ResourceId(skillset_id, _) = id;
-        let skillset = self.get_skillset(skillset_id)?;
-        skillset.get_resource(id)
-    }
-
-    pub fn get_state(&self, id: StateId) -> Option<&State> {
-        let StateId(resource_id, _) = id;
-        let resource = self.get_resource(resource_id)?;
-        resource.get_state(id)
-    }
-
-    //---------- Event ----------
-
-    pub fn get_event(&self, id: EventId) -> Option<&Event> {
-        let EventId(skillset_id, _) = id;
-        let skillset = self.get_skillset(skillset_id)?;
-        skillset.get_event(id)
-    }
-
     //---------- Duplicate ----------
+
+    pub fn type_naming(&self) -> Vec<Naming> {
+        self.types.iter().map(|x| x.naming()).collect()
+    }
+    pub fn skillset_naming(&self) -> Vec<Naming> {
+        self.skillsets.iter().map(|x| x.naming()).collect()
+    }
 
     pub fn duplicate(&self) -> Result<(), RlError> {
         // Types
-        let names = self.types.iter().map(|x| x.naming()).collect();
-        check_duplicate(&names)?;
+        check_duplicate(self.type_naming())?;
         // Skillset
-        let names = self.skillsets.iter().map(|x| x.naming()).collect();
-        check_duplicate(&names)?;
-        // check_duplicate(&inner_names)?;
+        check_duplicate(self.skillset_naming())?;
+
         // skillset
         for x in self.skillsets.iter() {
-            x.duplicate(&names)?;
+            x.duplicate(self)?;
         }
         //
         Ok(())
@@ -181,6 +138,8 @@ impl Model {
     }
 }
 
+//------------------------- Get From Id -------------------------
+
 impl GetFromId<TypeId, RlType> for Model {
     fn get(&self, id: TypeId) -> Option<&RlType> {
         self.get_type(id)
@@ -191,6 +150,45 @@ impl GetFromId<SkillsetId, Skillset> for Model {
         self.get_skillset(id)
     }
 }
+
+// From Skillset
+impl GetFromId<DataId, Data> for Model {
+    fn get(&self, id: DataId) -> Option<&Data> {
+        let DataId(skillset_id, _) = id;
+        let skillset = self.get(skillset_id)?;
+        skillset.get(id)
+    }
+}
+impl GetFromId<ResourceId, Resource> for Model {
+    fn get(&self, id: ResourceId) -> Option<&Resource> {
+        let ResourceId(skillset_id, _) = id;
+        let skillset = self.get(skillset_id)?;
+        skillset.get(id)
+    }
+}
+impl GetFromId<StateId, State> for Model {
+    fn get(&self, id: StateId) -> Option<&State> {
+        let StateId(resource_id, _) = id;
+        let resource = self.get(resource_id)?;
+        resource.get(id)
+    }
+}
+impl GetFromId<EventId, Event> for Model {
+    fn get(&self, id: EventId) -> Option<&Event> {
+        let EventId(skillset_id, _) = id;
+        let skillset = self.get(skillset_id)?;
+        skillset.get(id)
+    }
+}
+impl GetFromId<SkillId, Skill> for Model {
+    fn get(&self, id: SkillId) -> Option<&Skill> {
+        let SkillId(skillset_id, _) = id;
+        let skillset = self.get(skillset_id)?;
+        skillset.get(id)
+    }
+}
+
+//------------------------- Display -------------------------
 
 impl std::fmt::Display for Model {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

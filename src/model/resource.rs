@@ -55,15 +55,6 @@ impl Resource {
         }
     }
 
-    pub fn find_state(&self, name: &str) -> Option<StateId> {
-        for x in self.states.iter() {
-            if x.name() == name {
-                return Some(x.id());
-            }
-        }
-        None
-    }
-
     pub fn set_initial(&mut self, state: Reference<StateId>) {
         self.initial = state;
     }
@@ -140,6 +131,16 @@ impl Named<ResourceId> for Resource {
     }
 }
 
+//------------------------- Get From Id -------------------------
+
+impl GetFromId<StateId, State> for Resource {
+    fn get(&self, id: StateId) -> Option<&State> {
+        self.get_state(id)
+    }
+}
+
+//------------------------- ToLang -------------------------
+
 impl ToLang for Resource {
     fn to_lang(&self, model: &Model) -> String {
         let mut s = String::new();
@@ -159,6 +160,8 @@ impl ToLang for Resource {
         s
     }
 }
+
+//------------------------- Display -------------------------
 
 impl std::fmt::Display for Resource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
