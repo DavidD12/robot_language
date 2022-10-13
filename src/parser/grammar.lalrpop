@@ -76,7 +76,7 @@ Data: Vec<Data> = {
 DataSingle: Data = "data" <d:DataDef> => d;
 DataBlock: Vec<Data> = "data" "{" <l:DataDef*> "}" => l;
 
-DataDef: Data = <x:Identifier> ":" <t:TypeRef> => Data::empty(x.name, t, Some(x.position));
+DataDef: Data = <x:Identifier> ":" <t:TypeRef> <p:Period?> => Data::empty(x.name, t, p, Some(x.position));
 
 //------------------------- Resource -------------------------
 
@@ -259,7 +259,7 @@ Interrupt: Interrupt = <l:@L>"interrupt" "{" "interrupting" <b:BoolValue> <e:Eff
 
 //------------------------- Progress -------------------------
 
-Progress: Progress = <l:@L>"progress" "{" "period" <p:Duration> <m:Message> "}" => {
+Progress: Progress = <l:@L>"progress" "{" <p:Period> <m:Message> "}" => {
     let position = Position::new(lookup, l);
     Progress::new(p, m, Some(position))
 };
@@ -377,6 +377,8 @@ Duration: Duration = {
     <i:UInteger> "sec" => Duration::from_secs(i),
     <i:UInteger> "ms" => Duration::from_millis(i),
 };
+Period: Duration = "period" <p:Duration> => p;
+
 
 UInteger: u64 = <i:r"[1-9][0-9]*"> => i.parse::<u64>().unwrap();
 

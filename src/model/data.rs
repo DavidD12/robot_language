@@ -1,6 +1,7 @@
 use super::*;
 use crate::parser::{Position, RlError};
 use std::collections::HashMap;
+use std::time::Duration;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct DataId(pub SkillsetId, pub usize);
@@ -14,6 +15,7 @@ pub struct Data {
     id: DataId,
     name: String,
     rl_type: Reference<TypeId>,
+    period: Option<Duration>,
     position: Option<Position>,
 }
 
@@ -21,6 +23,7 @@ impl Data {
     pub fn empty<S: Into<String>>(
         name: S,
         rl_type: Reference<TypeId>,
+        period: Option<Duration>,
         position: Option<Position>,
     ) -> Self {
         let id = DataId::empty();
@@ -29,6 +32,7 @@ impl Data {
             id,
             name,
             rl_type,
+            period,
             position,
         }
     }
@@ -39,6 +43,10 @@ impl Data {
 
     pub fn set_type(&mut self, id: TypeId) {
         self.rl_type = Reference::Resolved(id);
+    }
+
+    pub fn period(&self) -> Option<Duration> {
+        self.period
     }
 
     //---------- Resolve ----------
@@ -80,7 +88,15 @@ impl Named<DataId> for Data {
 
 impl ToLang for Data {
     fn to_lang(&self, model: &Model) -> String {
-        format!("{}: {}\n", self.name, self.rl_type.to_lang(model))
+        match self.period {
+            Some(period) => format!(
+                "{}: {} period {} ms\n",
+                self.name,
+                self.rl_type.to_lang(model),
+                period.as_millis()
+            ),
+            None => format!("{}: {}\n", self.name, self.rl_type.to_lang(model)),
+        }
     }
 }
 
