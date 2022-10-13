@@ -1,7 +1,7 @@
 use super::*;
 use crate::parser::Position;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct TypeId(pub usize);
 impl Id for TypeId {
     fn empty() -> Self {
@@ -21,20 +21,19 @@ impl RlType {
         let name = name.into();
         Self { id, name, position }
     }
+}
 
-    pub fn id(&self) -> TypeId {
+impl Named<TypeId> for RlType {
+    fn id(&self) -> TypeId {
         self.id
     }
-
-    pub(super) fn set_id(&mut self, id: TypeId) {
+    fn set_id(&mut self, id: TypeId) {
         self.id = id;
     }
-
-    pub fn name(&self) -> &str {
+    fn name(&self) -> &str {
         &self.name
     }
-
-    pub fn position(&self) -> Option<Position> {
+    fn position(&self) -> Option<Position> {
         self.position
     }
 }

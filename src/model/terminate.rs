@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 pub trait TerminateId: Id {}
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct SuccessId(pub SkillId, pub usize);
 impl Id for SuccessId {
     fn empty() -> Self {
@@ -13,7 +13,7 @@ impl Id for SuccessId {
 }
 impl TerminateId for SuccessId {}
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct FailureId(pub SkillId, pub usize);
 impl Id for FailureId {
     fn empty() -> Self {

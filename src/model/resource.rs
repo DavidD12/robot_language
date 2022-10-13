@@ -2,7 +2,7 @@ use super::*;
 use crate::parser::{Position, RlError};
 use std::collections::HashMap;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct ResourceId(pub SkillsetId, pub usize);
 impl Id for ResourceId {
     fn empty() -> Self {
@@ -31,18 +31,6 @@ impl Resource {
             transitions: Transitions::All,
             position,
         }
-    }
-
-    pub fn id(&self) -> ResourceId {
-        self.id
-    }
-
-    pub(super) fn set_id(&mut self, id: ResourceId) {
-        self.id = id;
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
     }
 
     //---------- State ----------
@@ -98,10 +86,6 @@ impl Resource {
         self.transitions = transitions;
     }
 
-    pub fn position(&self) -> Option<Position> {
-        self.position
-    }
-
     //---------- Duplicate ----------
 
     pub fn names(&self) -> Vec<(String, Option<Position>)> {
@@ -135,6 +119,24 @@ impl Resource {
             },
             Reference::Resolved(_) => Ok(()),
         }
+    }
+}
+
+impl Named<ResourceId> for Resource {
+    fn id(&self) -> ResourceId {
+        self.id
+    }
+
+    fn set_id(&mut self, id: ResourceId) {
+        self.id = id;
+    }
+
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn position(&self) -> Option<Position> {
+        self.position
     }
 }
 

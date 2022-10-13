@@ -2,7 +2,7 @@ use super::*;
 use crate::parser::{Position, RlError};
 use std::collections::HashMap;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct SkillId(pub SkillsetId, pub usize);
 impl Id for SkillId {
     fn empty() -> Self {
@@ -43,18 +43,6 @@ impl Skill {
             failures: Vec::new(),
             position,
         }
-    }
-
-    pub fn id(&self) -> SkillId {
-        self.id
-    }
-
-    pub(super) fn set_id(&mut self, id: SkillId) {
-        self.id = id;
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
     }
 
     //---------- Input ----------
@@ -154,12 +142,6 @@ impl Skill {
         failure.set_id(id);
         self.failures.push(failure);
         id
-    }
-
-    //---------- ----------
-
-    pub fn position(&self) -> Option<Position> {
-        self.position
     }
 
     //---------- Duplicate ----------
@@ -269,6 +251,21 @@ impl Skill {
     }
 }
 
+impl Named<SkillId> for Skill {
+    fn id(&self) -> SkillId {
+        self.id
+    }
+    fn set_id(&mut self, id: SkillId) {
+        self.id = id;
+    }
+    fn name(&self) -> &str {
+        &self.name
+    }
+    fn position(&self) -> Option<Position> {
+        self.position
+    }
+}
+
 impl ToLang for Skill {
     fn to_lang(&self, model: &Model) -> String {
         let mut s = String::new();
@@ -293,7 +290,7 @@ impl ToLang for Skill {
         if !self.preconditions.is_empty() {
             s.push_str("\t\t\tprecondition {\n");
             for x in self.preconditions.iter() {
-                s.push_str(&format!("\t\t\t\t{}", x.to_lang(model)))
+                s.push_str(&format!("\t\t\t\t{}\n", x.to_lang(model)))
             }
             s.push_str("\t\t\t}\n");
         }

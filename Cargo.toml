@@ -14,6 +14,7 @@ line-col = "0.2.1"
 log = "0.4.0"
 env_logger = "0.8.4"
 z3 = "0.11.2"
+clap = { version = "4.0.11", features = ["derive"] }
 
 [build-dependencies]
 lalrpop = { version = "0.19.7", features = ["lexer"] }
@@ -30,3 +31,6 @@ path = "bin/check_ok.rs"
 name = "check_err"
 path = "bin/check_err.rs"
 
+[[bin]]
+name = "robot_language"
+path = "bin/main.rs"

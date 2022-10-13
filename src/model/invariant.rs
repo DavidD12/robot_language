@@ -2,7 +2,7 @@ use super::*;
 use crate::parser::{Position, RlError};
 use std::collections::HashMap;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct InvariantId(pub SkillId, pub usize);
 impl Id for InvariantId {
     fn empty() -> Self {
@@ -36,28 +36,12 @@ impl Invariant {
         }
     }
 
-    pub fn id(&self) -> InvariantId {
-        self.id
-    }
-
-    pub fn set_id(&mut self, id: InvariantId) {
-        self.id = id;
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
     pub fn guard(&self) -> &Expr {
         &self.guard
     }
 
     pub fn effects(&self) -> &Vec<Effect> {
         &self.effects
-    }
-
-    pub fn position(&self) -> Option<Position> {
-        self.position
     }
 
     //---------- Resolve ----------
@@ -76,6 +60,24 @@ impl Invariant {
             x.resolve_state(map)?;
         }
         Ok(())
+    }
+}
+
+impl Named<InvariantId> for Invariant {
+    fn id(&self) -> InvariantId {
+        self.id
+    }
+
+    fn set_id(&mut self, id: InvariantId) {
+        self.id = id;
+    }
+
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn position(&self) -> Option<Position> {
+        self.position
     }
 }
 

@@ -10,6 +10,9 @@ pub use parser::*;
 pub mod model;
 pub use model::*;
 
+pub mod verif;
+pub use verif::*;
+
 pub fn process_file(model: &mut Model, filename: &str) -> Result<(), RlError> {
     // Parsing
     match parse_model_file(model, filename) {
@@ -37,4 +40,12 @@ pub fn process_file(model: &mut Model, filename: &str) -> Result<(), RlError> {
     }
     //
     Ok(())
+}
+
+pub fn load_model(file: &str) -> Result<Model, RlError> {
+    let mut model = Model::empty();
+    match process_file(&mut model, file) {
+        Ok(_) => Ok(model),
+        Err(e) => Err(e),
+    }
 }

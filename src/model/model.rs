@@ -110,35 +110,17 @@ impl Model {
 
     //---------- Duplicate ----------
 
-    pub fn names(&self) -> Vec<(String, Option<Position>)> {
-        let mut v = Vec::new();
-        // Type
-        for x in self.types.iter() {
-            v.push((x.name().into(), x.position()));
-        }
-        // Skillset
-        for x in self.skillsets.iter() {
-            v.push((x.name().into(), x.position()));
-        }
-        v
-    }
-
     pub fn duplicate(&self) -> Result<(), RlError> {
-        let names = self.names();
-        for (i, (n1, p1)) in names.iter().enumerate() {
-            for (n2, p2) in names.iter().skip(i + 1) {
-                if n1 == n2 {
-                    return Err(RlError::Duplicate {
-                        name: n1.clone(),
-                        first: *p1,
-                        second: *p2,
-                    });
-                }
-            }
-        }
+        // Types
+        let names = self.types.iter().map(|x| x.naming()).collect();
+        check_duplicate(&names)?;
+        // Skillset
+        let names = self.skillsets.iter().map(|x| x.naming()).collect();
+        check_duplicate(&names)?;
+        // check_duplicate(&inner_names)?;
         // skillset
         for x in self.skillsets.iter() {
-            x.duplicate(self)?;
+            x.duplicate(&names)?;
         }
         //
         Ok(())
@@ -196,6 +178,17 @@ impl Model {
         }
         //
         s
+    }
+}
+
+impl GetFromId<TypeId, RlType> for Model {
+    fn get(&self, id: TypeId) -> Option<&RlType> {
+        self.get_type(id)
+    }
+}
+impl GetFromId<SkillsetId, Skillset> for Model {
+    fn get(&self, id: SkillsetId) -> Option<&Skillset> {
+        self.get_skillset(id)
     }
 }
 

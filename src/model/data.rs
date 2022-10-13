@@ -2,7 +2,7 @@ use super::*;
 use crate::parser::{Position, RlError};
 use std::collections::HashMap;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct DataId(pub SkillsetId, pub usize);
 impl Id for DataId {
     fn empty() -> Self {
@@ -33,28 +33,12 @@ impl Data {
         }
     }
 
-    pub fn id(&self) -> DataId {
-        self.id
-    }
-
-    pub fn set_id(&mut self, id: DataId) {
-        self.id = id;
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
     pub fn rl_type(&self) -> &Reference<TypeId> {
         &self.rl_type
     }
 
     pub fn set_type(&mut self, id: TypeId) {
         self.rl_type = Reference::Resolved(id);
-    }
-
-    pub fn position(&self) -> Option<Position> {
-        self.position
     }
 
     //---------- Resolve ----------
@@ -73,6 +57,24 @@ impl Data {
             },
             Reference::Resolved(_) => Ok(()),
         }
+    }
+}
+
+impl Named<DataId> for Data {
+    fn id(&self) -> DataId {
+        self.id
+    }
+
+    fn set_id(&mut self, id: DataId) {
+        self.id = id;
+    }
+
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn position(&self) -> Option<Position> {
+        self.position
     }
 }
 

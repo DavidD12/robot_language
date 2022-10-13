@@ -2,7 +2,7 @@ use super::*;
 use crate::parser::{Position, RlError};
 use std::collections::HashMap;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct EventId(pub SkillsetId, pub usize);
 impl Id for EventId {
     fn empty() -> Self {
@@ -36,28 +36,12 @@ impl Event {
         }
     }
 
-    pub fn id(&self) -> EventId {
-        self.id
-    }
-
-    pub(super) fn set_id(&mut self, id: EventId) {
-        self.id = id;
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
     pub fn guard(&self) -> &Option<Expr> {
         &self.guard
     }
 
     pub fn effects(&self) -> &Vec<Effect> {
         &self.effects
-    }
-
-    pub fn position(&self) -> Option<Position> {
-        self.position
     }
 
     //---------- Resolve ----------
@@ -86,6 +70,23 @@ impl Event {
             x.resolve_state(map)?;
         }
         Ok(())
+    }
+}
+
+impl Named<EventId> for Event {
+    fn id(&self) -> EventId {
+        self.id
+    }
+
+    fn set_id(&mut self, id: EventId) {
+        self.id = id;
+    }
+
+    fn name(&self) -> &str {
+        &self.name
+    }
+    fn position(&self) -> Option<Position> {
+        self.position
     }
 }
 

@@ -2,7 +2,7 @@ use super::*;
 use crate::parser::{Position, RlError};
 use std::collections::HashMap;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct SkillsetId(pub usize);
 impl Id for SkillsetId {
     fn empty() -> Self {
@@ -33,18 +33,6 @@ impl Skillset {
             skills: Vec::new(),
             position,
         }
-    }
-
-    pub fn id(&self) -> SkillsetId {
-        self.id
-    }
-
-    pub(super) fn set_id(&mut self, id: SkillsetId) {
-        self.id = id;
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
     }
 
     //---------- Data ----------
@@ -172,10 +160,8 @@ impl Skillset {
 
     //---------- Duplicate ----------
 
-    pub fn names(&self, names: Vec<(String, Option<Position>)>) -> Vec<(String, Option<Position>)> {
+    pub fn names(&self) -> Vec<Naming> {
         let mut v = Vec::new();
-        //
-        v.extend(names);
         // Data
         for x in self.data.iter() {
             v.push((x.name().into(), x.position()));
@@ -192,23 +178,22 @@ impl Skillset {
         // Skill
         for x in self.skills.iter() {
             v.push((x.name().into(), x.position()));
-            v.extend(x.names());
         }
         v
     }
 
-    pub fn duplicate(&self, model: &Model) -> Result<(), RlError> {
-        let names = self.names(model.names());
-        for (i, (n1, p1)) in names.iter().enumerate() {
-            for (n2, p2) in names.iter().skip(i + 1) {
-                if n1 == n2 {
-                    return Err(RlError::Duplicate {
-                        name: n1.clone(),
-                        first: *p1,
-                        second: *p2,
-                    });
-                }
-            }
+    pub fn duplicate(&self, container_names: &Vec<Naming>) -> Result<(), RlError> {
+        let mut global_names: Vec<Naming> = container_names
+            .iter()
+            .cloned()
+            .chain(self.names().iter().cloned())
+            .collect();
+        global_names.extend(self.names());
+        check_duplicate(&global_names)?;
+
+        // Skill
+        for x in self.skills.iter() {
+            // x.duplicate(&global_names)?;
         }
         Ok(())
     }
@@ -257,10 +242,19 @@ impl Skillset {
         }
         Ok(())
     }
+}
 
-    //---------- ----------
-
-    pub fn position(&self) -> Option<Position> {
+impl Named<SkillsetId> for Skillset {
+    fn id(&self) -> SkillsetId {
+        self.id
+    }
+    fn set_id(&mut self, id: SkillsetId) {
+        self.id = id;
+    }
+    fn name(&self) -> &str {
+        &self.name
+    }
+    fn position(&self) -> Option<Position> {
         self.position
     }
 }
