@@ -67,6 +67,15 @@ impl Resource {
         map
     }
 
+    pub fn get_state_from_name(&self, name: &str) -> Option<&State> {
+        for x in self.states.iter() {
+            if x.name() == name {
+                return Some(x);
+            }
+        }
+        None
+    }
+
     //---------- Transition ----------
 
     pub fn transitions(&self) -> &Transitions {

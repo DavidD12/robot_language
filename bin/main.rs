@@ -29,5 +29,11 @@ fn main() {
         if args.verbose >= 3 {
             println!("{}", model);
         }
+        let skillset = model.skillsets().first().unwrap();
+        let event = skillset.events().first().unwrap();
+        match can_event_succed(skillset, event) {
+            Some(solution) => println!("{}", solution.pretty(skillset)),
+            None => println!("no solution"),
+        }
     }
 }

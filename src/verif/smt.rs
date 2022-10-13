@@ -65,8 +65,8 @@ impl<'a> Smt<'a> {
         self.resource_current.insert(resource.id(), current);
     }
 
-    fn add_resources(&mut self, skillset: &Skillset, next: bool) {
-        for x in skillset.resources().iter() {
+    pub fn add_resources(&mut self, next: bool) {
+        for x in self.skillset.resources().iter() {
             self.add_resource(x);
             self.add_resource_current(x);
             if next {
@@ -108,7 +108,7 @@ impl<'a> Smt<'a> {
         }
     }
 
-    fn expr_to_smt(&self, expr: &Expr, next: bool) -> z3::ast::Bool {
+    pub fn expr_to_smt(&self, expr: &Expr, next: bool) -> z3::ast::Bool {
         match expr {
             Expr::True => z3::ast::Bool::from_bool(self.ctx, true),
             Expr::False => z3::ast::Bool::from_bool(self.ctx, true),
@@ -187,12 +187,25 @@ impl<'a> Smt<'a> {
         z3::ast::Bool::and(self.ctx, &v.iter().collect::<Vec<_>>())
     }
 
-    fn get_solution(self, model: z3::Model, next: bool) -> Solution {
+    pub fn get_solution(self, model: &z3::Model, next: bool) -> Solution {
         let mut solution = Solution::empty();
         for resource in self.skillset.resources().iter() {
-            let state = model.eval(&self.resource_current[&resource.id()], true);
-            // TODO
-            todo!()
+            let state = model
+                .eval(&self.resource_current[&resource.id()], true)
+                .unwrap();
+            let state = resource.get_state_from_name(&state.to_string()).unwrap();
+            solution.current.insert(resource.id(), state.id());
+        }
+        if next {
+            let mut map = HashMap::new();
+            for resource in self.skillset.resources().iter() {
+                let state = model
+                    .eval(&self.resource_next[&resource.id()], true)
+                    .unwrap();
+                let state = resource.get_state_from_name(&state.to_string()).unwrap();
+                map.insert(resource.id(), state.id());
+            }
+            solution.next = Some(map);
         }
         solution
     }
