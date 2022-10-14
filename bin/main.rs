@@ -31,8 +31,8 @@ fn main() {
         }
         let skillset = model.skillsets().first().unwrap();
         let event = skillset.events().first().unwrap();
-        match can_event_succed(skillset, event) {
-            Some(solution) => println!("{}", solution.pretty(skillset)),
+        match verif::can_event_effects_fail(skillset, event) {
+            Some(e) => println!("{:?}", e),
             None => println!("no solution"),
         }
     }

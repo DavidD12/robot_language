@@ -2,6 +2,7 @@
 
 mod tests_ok {
 
+    use rl::model::Model;
     use rl::*;
 
     fn check_file_ok(file: &str) {
@@ -98,6 +99,8 @@ mod tests_ok {
 
 mod tests_err {
 
+    use rl::model::Model;
+    use rl::parser::RlError;
     use rl::*;
 
     fn check_file(file: &str) -> Result<Model, RlError> {

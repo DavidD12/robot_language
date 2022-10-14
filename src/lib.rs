@@ -4,18 +4,13 @@ extern crate lalrpop_util;
 #[macro_use]
 extern crate log;
 
-pub mod parser;
-pub use parser::*;
-
 pub mod model;
-pub use model::*;
-
+pub mod parser;
 pub mod verif;
-pub use verif::*;
 
-pub fn process_file(model: &mut Model, filename: &str) -> Result<(), RlError> {
+pub fn process_file(model: &mut model::Model, filename: &str) -> Result<(), parser::RlError> {
     // Parsing
-    match parse_model_file(model, filename) {
+    match parser::parse_model_file(model, filename) {
         Ok(_) => info!("Parsing OK"),
         Err(e) => {
             error!("{}", e);
@@ -42,8 +37,8 @@ pub fn process_file(model: &mut Model, filename: &str) -> Result<(), RlError> {
     Ok(())
 }
 
-pub fn load_model(file: &str) -> Result<Model, RlError> {
-    let mut model = Model::empty();
+pub fn load_model(file: &str) -> Result<model::Model, parser::RlError> {
+    let mut model = model::Model::empty();
     match process_file(&mut model, file) {
         Ok(_) => Ok(model),
         Err(e) => Err(e),

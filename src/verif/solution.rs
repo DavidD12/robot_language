@@ -1,6 +1,7 @@
 use crate::model::*;
 use std::collections::HashMap;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Solution {
     pub current: HashMap<ResourceId, StateId>,
     pub next: Option<HashMap<ResourceId, StateId>>,

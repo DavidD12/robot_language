@@ -6,7 +6,7 @@ fn check(file: &str) {
         "-------------------------[{}]-------------------------",
         file
     );
-    let mut model = Model::empty();
+    let mut model = model::Model::empty();
     match process_file(&mut model, file) {
         Ok(_) => println!("{}", model),
         _ => {}

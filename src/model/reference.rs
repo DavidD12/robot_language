@@ -1,5 +1,5 @@
 use super::*;
-use crate::{Position, ToLang};
+use crate::parser::Position;
 
 #[derive(Clone)]
 pub enum Reference<I: Id> {
@@ -17,7 +17,7 @@ impl<I: Id> Reference<I> {
 }
 
 impl ToLang for Reference<TypeId> {
-    fn to_lang(&self, model: &crate::Model) -> String {
+    fn to_lang(&self, model: &Model) -> String {
         match self {
             Reference::Unresolved(name, _) => format!("{}/* ? */", name),
             Reference::Resolved(id) => format!("{}", model.get(*id).unwrap()),
@@ -25,7 +25,7 @@ impl ToLang for Reference<TypeId> {
     }
 }
 impl ToLang for Reference<ResourceId> {
-    fn to_lang(&self, model: &crate::Model) -> String {
+    fn to_lang(&self, model: &Model) -> String {
         match self {
             Reference::Unresolved(name, _) => format!("{}/* ? */", name),
             Reference::Resolved(id) => format!("{}", model.get(*id).unwrap()),

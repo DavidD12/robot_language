@@ -1,4 +1,5 @@
-use crate::{model::*, Solution};
+use super::Solution;
+use crate::model::*;
 
 // use z3::ast::*;
 // use z3::{Config, Context, Solver, Sort};
@@ -62,7 +63,7 @@ impl<'a> Smt<'a> {
             format!("resource_{}_next", resource.name()),
             &datatype.sort,
         );
-        self.resource_current.insert(resource.id(), current);
+        self.resource_next.insert(resource.id(), current);
     }
 
     pub fn add_resources(&mut self, next: bool) {
@@ -149,7 +150,7 @@ impl<'a> Smt<'a> {
         }
     }
 
-    fn check_effects(&self, effects: &Vec<Effect>) -> z3::ast::Bool {
+    pub fn check_effects(&self, effects: &Vec<Effect>) -> z3::ast::Bool {
         let v = effects
             .iter()
             .map(|x| self.check_effect(x))
@@ -164,7 +165,7 @@ impl<'a> Smt<'a> {
         self.exists_transition(resource.id(), r, s)
     }
 
-    fn apply_effects(&self, effects: &Vec<Effect>) -> z3::ast::Bool {
+    pub fn apply_effects(&self, effects: &Vec<Effect>) -> z3::ast::Bool {
         let mut changed = Vec::new();
         let mut v = Vec::new();
         // Changed
