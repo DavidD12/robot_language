@@ -49,8 +49,17 @@ TypeRef: Reference<TypeId> = <x:Identifier> => {
 
 //------------------------- Skillset -------------------------
 
-Skillset: Skillset = "skillset" <x:Identifier> "{" <data:Data> <resources:Resource> <events:Event> <skills:Skill> "}" => {
+Skillset: Skillset = "skillset" <x:Identifier> "{" 
+        <paramters:SkillsetParameter>
+        <data:Data>
+        <resources:Resource>
+        <events:Event>
+        <skills:Skill>
+    "}" => {
     let mut skillset = Skillset::empty(x.name, Some(x.position));
+    for x in paramters {
+        skillset.add_parameter(x);
+    }
     for x in data {
         skillset.add_data(x);
     }
@@ -64,6 +73,22 @@ Skillset: Skillset = "skillset" <x:Identifier> "{" <data:Data> <resources:Resour
         skillset.add_skill(x);
     }
     skillset
+};
+
+//------------------------- Skillset Parameter -------------------------
+
+SkillsetParameter: Vec<SkillsetParameter> = {
+    <v: SkillsetParameterSingle*> => v,
+    <v: SkillsetParameterBlock> => v,
+};
+
+SkillsetParameterSingle: SkillsetParameter = "parameter" <v:Variable> => SkillsetParameter::empty(v);
+SkillsetParameterBlock: Vec<SkillsetParameter> = "parameter" "{" <l:Variable*> "}" => {
+    let mut v = Vec::new();
+    for x in l {
+        v.push(SkillsetParameter::empty(x));
+    }
+    v
 };
 
 //------------------------- Data -------------------------
@@ -148,6 +173,7 @@ SkillSingle: Skill = "skill" <s:SkillDef> => s;
 SkillBlock: Vec<Skill> = "skill" "{" <l:SkillDef*> "}" => l;
 
 SkillDef: Skill = <x:Identifier> "{" 
+    <par:SkillParameter>
     <inp:Input>
     <out:Output>
     <pre:Precondition>
@@ -159,6 +185,9 @@ SkillDef: Skill = <x:Identifier> "{"
     <fai:Failure>
     "}" => {
     let mut skill = Skill::empty(x.name, Some(x.position));
+    for x in par {
+        skill.add_parameter(x);
+    }
     for x in inp {
         skill.add_input(x);
     }
@@ -188,6 +217,22 @@ SkillDef: Skill = <x:Identifier> "{"
     }
     //
     skill
+};
+
+//------------------------- Skill Parameter -------------------------
+
+SkillParameter: Vec<SkillParameter> = {
+    <v: SkillParameterSingle*> => v,
+    <v: SkillParameterBlock> => v,
+};
+
+SkillParameterSingle: SkillParameter = "parameter" <v:Variable> => SkillParameter::empty(v);
+SkillParameterBlock: Vec<SkillParameter> = "parameter" "{" <l:Variable*> "}" => {
+    let mut v = Vec::new();
+    for x in l {
+        v.push(SkillParameter::empty(x));
+    }
+    v
 };
 
 //------------------------- Input -------------------------

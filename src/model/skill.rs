@@ -13,6 +13,7 @@ impl Id for SkillId {
 pub struct Skill {
     id: SkillId,
     name: String,
+    parameters: Vec<SkillParameter>,
     inputs: Vec<Variable>,
     outputs: Vec<Variable>,
     preconditions: Vec<Precondition>,
@@ -32,6 +33,7 @@ impl Skill {
         Self {
             id,
             name,
+            parameters: Vec::new(),
             inputs: Vec::new(),
             outputs: Vec::new(),
             preconditions: Vec::new(),
@@ -43,6 +45,28 @@ impl Skill {
             failures: Vec::new(),
             position,
         }
+    }
+
+    //---------- Parameter ----------
+
+    pub fn parameter(&self) -> &Vec<SkillParameter> {
+        &self.parameters
+    }
+
+    pub fn get_parameter(&self, id: SkillParameterId) -> Option<&SkillParameter> {
+        let SkillParameterId(skill_id, parameter_id) = id;
+        if self.id != skill_id {
+            None
+        } else {
+            self.parameters.get(parameter_id)
+        }
+    }
+
+    pub fn add_parameter(&mut self, mut parameter: SkillParameter) -> SkillParameterId {
+        let id = SkillParameterId(self.id, self.parameters.len());
+        parameter.set_id(id);
+        self.parameters.push(parameter);
+        id
     }
 
     //---------- Input ----------
@@ -149,6 +173,9 @@ impl Skill {
 
     //---------- Duplicate ----------
 
+    pub fn parameter_naming(&self) -> Vec<Naming> {
+        self.parameters.iter().map(|x| x.naming()).collect()
+    }
     pub fn input_naming(&self) -> Vec<Naming> {
         self.inputs
             .iter()
@@ -177,6 +204,14 @@ impl Skill {
     pub fn duplicate(&self, model: &Model) -> Result<(), RlError> {
         let types = model.type_naming();
 
+        // Parameter
+        check_duplicate(
+            types
+                .clone()
+                .into_iter()
+                .chain(self.parameter_naming().into_iter())
+                .collect(),
+        )?;
         // Input
         check_duplicate(
             types
@@ -232,6 +267,10 @@ impl Skill {
     //---------- Resolve ----------
 
     pub fn resolve_type(&mut self, map: &HashMap<String, TypeId>) -> Result<(), RlError> {
+        // Parameter
+        for x in self.parameters.iter_mut() {
+            x.resolve_type(map)?;
+        }
         // Input
         for x in self.inputs.iter_mut() {
             x.resolve_type(map)?;
@@ -323,6 +362,14 @@ impl ToLang for Skill {
     fn to_lang(&self, model: &Model) -> String {
         let mut s = String::new();
         s.push_str(&format!("\t\t{} {{\n", self.name));
+        // Parameter
+        if !self.parameters.is_empty() {
+            s.push_str("\t\t\tparameter {\n");
+            for x in self.parameters.iter() {
+                s.push_str(&format!("\t\t\t\t{}\n", x.to_lang(model)))
+            }
+            s.push_str("\t\t\t}\n");
+        }
         // Input
         if !self.inputs.is_empty() {
             s.push_str("\t\t\tinput {\n");

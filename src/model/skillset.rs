@@ -13,6 +13,7 @@ impl Id for SkillsetId {
 pub struct Skillset {
     id: SkillsetId,
     name: String,
+    parameters: Vec<SkillsetParameter>,
     data: Vec<Data>,
     resources: Vec<Resource>,
     events: Vec<Event>,
@@ -27,12 +28,35 @@ impl Skillset {
         Self {
             id,
             name,
+            parameters: Vec::new(),
             data: Vec::new(),
             resources: Vec::new(),
             events: Vec::new(),
             skills: Vec::new(),
             position,
         }
+    }
+
+    //---------- Parameter ----------
+
+    pub fn parameter(&self) -> &Vec<SkillsetParameter> {
+        &self.parameters
+    }
+
+    pub fn get_parameter(&self, id: SkillsetParameterId) -> Option<&SkillsetParameter> {
+        let SkillsetParameterId(skillset_id, parameter_id) = id;
+        if self.id != skillset_id {
+            None
+        } else {
+            self.parameters.get(parameter_id)
+        }
+    }
+
+    pub fn add_parameter(&mut self, mut parameter: SkillsetParameter) -> SkillsetParameterId {
+        let id = SkillsetParameterId(self.id, self.parameters.len());
+        parameter.set_id(id);
+        self.parameters.push(parameter);
+        id
     }
 
     //---------- Data ----------
@@ -151,28 +175,9 @@ impl Skillset {
 
     //---------- Duplicate ----------
 
-    // pub fn names(&self) -> Vec<Naming> {
-    //     let mut v = Vec::new();
-    //     // Data
-    //     for x in self.data.iter() {
-    //         v.push((x.name().into(), x.position()));
-    //     }
-    //     // Resource
-    //     for x in self.resources.iter() {
-    //         v.push((x.name().into(), x.position()));
-    //         v.extend(x.names());
-    //     }
-    //     // Event
-    //     for x in self.events.iter() {
-    //         v.push((x.name().into(), x.position()));
-    //     }
-    //     // Skill
-    //     for x in self.skills.iter() {
-    //         v.push((x.name().into(), x.position()));
-    //     }
-    //     v
-    // }
-
+    pub fn parameter_naming(&self) -> Vec<Naming> {
+        self.parameters.iter().map(|x| x.naming()).collect()
+    }
     pub fn data_naming(&self) -> Vec<Naming> {
         self.data.iter().map(|x| x.naming()).collect()
     }
@@ -194,6 +199,14 @@ impl Skillset {
     pub fn duplicate(&self, model: &Model) -> Result<(), RlError> {
         let types = model.type_naming();
 
+        // Parameter
+        check_duplicate(
+            types
+                .clone()
+                .into_iter()
+                .chain(self.parameter_naming().into_iter())
+                .collect(),
+        )?;
         // Data
         check_duplicate(
             types
@@ -238,6 +251,10 @@ impl Skillset {
     //---------- Resolve ----------
 
     pub fn resolve_type(&mut self, map: &HashMap<String, TypeId>) -> Result<(), RlError> {
+        // Parameter
+        for x in self.parameters.iter_mut() {
+            x.resolve_type(map)?;
+        }
         // Data
         for x in self.data.iter_mut() {
             x.resolve_type(map)?;
@@ -298,6 +315,11 @@ impl Named<SkillsetId> for Skillset {
 
 //------------------------- Get From Id -------------------------
 
+impl GetFromId<SkillsetParameterId, SkillsetParameter> for Skillset {
+    fn get(&self, id: SkillsetParameterId) -> Option<&SkillsetParameter> {
+        self.get_parameter(id)
+    }
+}
 impl GetFromId<DataId, Data> for Skillset {
     fn get(&self, id: DataId) -> Option<&Data> {
         self.get_data(id)
@@ -333,6 +355,14 @@ impl ToLang for Skillset {
     fn to_lang(&self, model: &Model) -> String {
         let mut s = String::new();
         s.push_str(&format!("skillset {} {{\n", self.name));
+        // Parameter
+        if !self.parameters.is_empty() {
+            s.push_str("\tparameter {\n");
+            for x in self.parameters.iter() {
+                s.push_str(&format!("\t\t{}\n", &x.to_lang(model)));
+            }
+            s.push_str("\t}\n");
+        }
         // Data
         if !self.data.is_empty() {
             s.push_str("\tdata {\n");

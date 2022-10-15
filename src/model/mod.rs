@@ -46,6 +46,9 @@ pub use effect::*;
 pub mod variable;
 pub use variable::*;
 
+pub mod parameter;
+pub use parameter::*;
+
 pub mod expr;
 pub use expr::*;
 
@@ -69,7 +72,7 @@ pub trait GetFromId<I: Id, T> {
 
 pub trait Named<I: Id> {
     fn id(&self) -> I;
-    fn set_id(&mut self, i: I);
+    fn set_id(&mut self, id: I);
     fn name(&self) -> &str;
     fn position(&self) -> Option<Position>;
     fn naming(&self) -> Naming {

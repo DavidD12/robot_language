@@ -28,6 +28,18 @@ mod tests_ok {
         check_file_ok("examples/tests/parsing/skillset_1.rl");
     }
     #[test]
+    fn skillset_parameter_1() {
+        check_file_ok("examples/tests/parsing/skillset_parameter_1.rl");
+    }
+    #[test]
+    fn skillset_parameter_2() {
+        check_file_ok("examples/tests/parsing/skillset_parameter_2.rl");
+    }
+    #[test]
+    fn skillset_parameter_3() {
+        check_file_ok("examples/tests/parsing/skillset_parameter_3.rl");
+    }
+    #[test]
     fn data_1() {
         check_file_ok("examples/tests/parsing/data_1.rl");
     }
@@ -54,6 +66,10 @@ mod tests_ok {
     #[test]
     fn skill_1() {
         check_file_ok("examples/tests/parsing/skill_1.rl");
+    }
+    #[test]
+    fn skill_parameter_1() {
+        check_file_ok("examples/tests/parsing/skill_parameter_1.rl");
     }
     #[test]
     fn precondition_1() {

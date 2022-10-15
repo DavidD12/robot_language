@@ -4,3 +4,6 @@
 - add pretty VError ?
 - move RlError from parser into lib ?
 - verif postcondition
+
+- input/output => Parameter + ID
+- data must use variable
