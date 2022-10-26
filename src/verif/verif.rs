@@ -15,6 +15,12 @@ pub fn check_skill(skillset: &Skillset, skill: &Skill) -> Vec<VError> {
     let mut v = vec![];
     // Precondition
     v.extend(check_skill_preconditions(skillset, skill));
+    // Start
+    if let Some(e) = can_start_effects_fail(skillset, skill) {
+        v.push(e)
+    }
+    // Invariant
+    v.extend(check_skill_invariants(skillset, skill));
     //
     v
 }

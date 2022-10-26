@@ -7,12 +7,16 @@ pub enum VError {
     EventGuardCantSucceed(EventId),
     EventGuardCantFail(EventId),
     EventEffectCanFail(EventId, Solution),
-    //
+    // Precondition
     SkillPreconditionCantSucceed(PreconditionId),
     SkillPreconditionCantFail(PreconditionId),
-    //
+    // Start
     SkillStartEffectCanFail(SkillId, Solution),
-    SkillStartCanFail(SkillId, Solution),
+    // Invariant
+    SkillInvariantCantSucceed(InvariantId),
+    SkillInvariantCantFail(InvariantId),
+    SkillInvariantEffectCanFail(InvariantId, Solution),
+    SkillStartInvariantCanFail(InvariantId, Solution),
 }
 
 impl ToLang for VError {
@@ -27,7 +31,6 @@ impl ToLang for VError {
                 "event '{}' guard can't fail.",
                 model.get(*e).unwrap().name()
             ),
-
             VError::EventEffectCanFail(e, sol) => format!(
                 "event '{}' effects can fail: {}",
                 model.get(*e).unwrap().name(),
@@ -48,11 +51,49 @@ impl ToLang for VError {
                 model.get(*s).unwrap().name(),
                 sol.to_lang(model)
             ),
-            VError::SkillStartCanFail(s, sol) => format!(
-                "skill start '{}' can fail: {}",
-                model.get(*s).unwrap().name(),
-                sol.to_lang(model)
-            ),
+            // Invariant
+            VError::SkillInvariantCantSucceed(i) => {
+                let InvariantId(skill_id, _) = i;
+                let skill = model.get(*skill_id).unwrap();
+                let inv = model.get(*i).unwrap();
+                format!(
+                    "skill '{}' invariant '{}' can't succeed.",
+                    skill.name(),
+                    inv.name()
+                )
+            }
+            VError::SkillInvariantCantFail(i) => {
+                let InvariantId(skill_id, _) = i;
+                let skill = model.get(*skill_id).unwrap();
+                let inv = model.get(*i).unwrap();
+                format!(
+                    "skill '{}' invariant '{}' can't fail.",
+                    skill.name(),
+                    inv.name()
+                )
+            }
+            VError::SkillInvariantEffectCanFail(i, sol) => {
+                let InvariantId(skill_id, _) = i;
+                let skill = model.get(*skill_id).unwrap();
+                let inv = model.get(*i).unwrap();
+                format!(
+                    "skill '{}' invariant '{}' effect can fail: {}",
+                    skill.name(),
+                    inv.name(),
+                    sol.to_lang(model)
+                )
+            }
+            VError::SkillStartInvariantCanFail(i, sol) => {
+                let InvariantId(skill_id, _) = i;
+                let skill = model.get(*skill_id).unwrap();
+                let inv = model.get(*i).unwrap();
+                format!(
+                    "skill '{}' invariant '{}' start can fail at start: {}",
+                    skill.name(),
+                    inv.name(),
+                    sol.to_lang(model)
+                )
+            }
         }
     }
 }

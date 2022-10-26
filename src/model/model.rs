@@ -194,6 +194,13 @@ impl GetFromId<PreconditionId, Precondition> for Model {
         skill.get(id)
     }
 }
+impl GetFromId<InvariantId, Invariant> for Model {
+    fn get(&self, id: InvariantId) -> Option<&Invariant> {
+        let InvariantId(skill_id, _) = id;
+        let skill = self.get(skill_id)?;
+        skill.get(id)
+    }
+}
 
 //------------------------- Display -------------------------
 

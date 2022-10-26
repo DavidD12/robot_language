@@ -21,6 +21,16 @@ mod tests_ok {
     fn precondition_1() {
         check_file_ok("examples/tests/verif/precondition_1.rl");
     }
+
+    #[test]
+    fn start_1() {
+        check_file_ok("examples/tests/verif/start_1.rl");
+    }
+
+    #[test]
+    fn invariant_1() {
+        check_file_ok("examples/tests/verif/invariant_1.rl");
+    }
 }
 
 mod tests_err {
@@ -33,7 +43,7 @@ mod tests_err {
         let res = process_file(&mut model, file);
         assert!(matches!(res, Ok(_)));
         let v = check_model(&model);
-        assert!(v.len() == 1);
+        assert!(v.len() >= 1);
         v.first().unwrap().clone()
     }
 
@@ -62,5 +72,32 @@ mod tests_err {
     fn precondition_err_2() {
         let result = check_file_err("examples/tests/verif/precondition_err_2.rl");
         assert!(matches!(result, VError::SkillPreconditionCantFail(_)));
+    }
+
+    #[test]
+    fn start_err_1() {
+        let result = check_file_err("examples/tests/verif/start_err_1.rl");
+        assert!(matches!(result, VError::SkillStartEffectCanFail(_, _)))
+    }
+
+    #[test]
+    fn invariant_err_1() {
+        let result = check_file_err("examples/tests/verif/invariant_err_1.rl");
+        assert!(matches!(result, VError::SkillInvariantCantSucceed(_)));
+    }
+    #[test]
+    fn invariant_err_2() {
+        let result = check_file_err("examples/tests/verif/invariant_err_2.rl");
+        assert!(matches!(result, VError::SkillInvariantCantFail(_)));
+    }
+    #[test]
+    fn invariant_err_3() {
+        let result = check_file_err("examples/tests/verif/invariant_err_3.rl");
+        assert!(matches!(result, VError::SkillInvariantEffectCanFail(_, _)));
+    }
+    #[test]
+    fn invariant_err_4() {
+        let result = check_file_err("examples/tests/verif/invariant_err_4.rl");
+        assert!(matches!(result, VError::SkillStartInvariantCanFail(_, _)));
     }
 }

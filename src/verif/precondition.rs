@@ -13,7 +13,7 @@ pub fn precondition_can_succeed(
     let mut smt = Smt::empty(skillset, &cfg, &ctx, &solver);
     // Resource
     smt.add_resources(false);
-    // Add preconditions until 'precondition'
+    // Add previous preconditions and current
     for pre in skill.preconditions().iter() {
         solver.assert(&smt.to_bool(pre.expr(), false));
         if pre.id() == precondition.id() {
@@ -44,6 +44,7 @@ pub fn precondition_can_fail(skillset: &Skillset, precondition: &Precondition) -
         }
         solver.assert(&smt.to_bool(pre.expr(), false));
     }
+    // current fails
     solver.assert(&z3::ast::Bool::not(
         &smt.to_bool(precondition.expr(), false),
     ));

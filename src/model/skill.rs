@@ -134,6 +134,15 @@ impl Skill {
         id
     }
 
+    pub fn get_invariant(&self, id: InvariantId) -> Option<&Invariant> {
+        let InvariantId(skill_id, n) = id;
+        if self.id != skill_id {
+            None
+        } else {
+            self.invariants.get(n)
+        }
+    }
+
     //---------- Progress ----------
 
     pub fn progress(&self) -> &Option<Progress> {
@@ -370,6 +379,11 @@ impl Named<SkillId> for Skill {
 impl GetFromId<PreconditionId, Precondition> for Skill {
     fn get(&self, id: PreconditionId) -> Option<&Precondition> {
         self.get_precondition(id)
+    }
+}
+impl GetFromId<InvariantId, Invariant> for Skill {
+    fn get(&self, id: InvariantId) -> Option<&Invariant> {
+        self.get_invariant(id)
     }
 }
 
