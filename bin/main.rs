@@ -29,11 +29,8 @@ fn main() {
         if args.verbose >= 3 {
             println!("{}", model);
         }
-        // let skillset = model.skillsets().first().unwrap();
-        // let event = skillset.events().first().unwrap();
-        // match verif::can_event_effects_fail(skillset, event) {
-        //     Some(e) => println!("{:?}", e),
-        //     None => println!("no solution"),
-        // }
+        if check(&model) {
+            // TODO
+        }
     }
 }

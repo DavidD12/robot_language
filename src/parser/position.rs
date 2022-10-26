@@ -1,6 +1,6 @@
 use line_col::LineColLookup;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct Position {
     pub line: usize,
     pub column: usize,

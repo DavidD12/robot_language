@@ -425,7 +425,7 @@ Duration: Duration = {
 Period: Duration = "period" <p:Duration> => p;
 
 
-UInteger: u64 = <i:r"[1-9][0-9]*"> => i.parse::<u64>().unwrap();
+UInteger: u64 = <i:r"[0-9]+"> => i.parse::<u64>().unwrap();
 
 Identifier: Identifier = <l:@L> <s:r"[a-zA-Z_][a-zA-Z_0-9]*"> <r:@R> => {
     Identifier::new(lookup, s, l)

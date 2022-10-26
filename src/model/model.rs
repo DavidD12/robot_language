@@ -187,6 +187,13 @@ impl GetFromId<SkillId, Skill> for Model {
         skillset.get(id)
     }
 }
+impl GetFromId<PreconditionId, Precondition> for Model {
+    fn get(&self, id: PreconditionId) -> Option<&Precondition> {
+        let PreconditionId(skill_id, _) = id;
+        let skill = self.get(skill_id)?;
+        skill.get(id)
+    }
+}
 
 //------------------------- Display -------------------------
 

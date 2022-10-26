@@ -7,3 +7,6 @@
 
 - input/output => Parameter + ID
 - data must use variable
+
+- check state type (i.e. same Resource)
+- change resolve with the reference method

@@ -1,3 +1,6 @@
+use crate::model::ToLang;
+use verif::check_model;
+
 #[macro_use]
 extern crate lalrpop_util;
 
@@ -42,5 +45,18 @@ pub fn load_model(file: &str) -> Result<model::Model, parser::RlError> {
     match process_file(&mut model, file) {
         Ok(_) => Ok(model),
         Err(e) => Err(e),
+    }
+}
+
+pub fn check(model: &model::Model) -> bool {
+    let errors = check_model(model);
+    if errors.is_empty() {
+        info!("Verification OK");
+        true
+    } else {
+        for e in errors.iter() {
+            error!("{}", e.to_lang(model));
+        }
+        false
     }
 }

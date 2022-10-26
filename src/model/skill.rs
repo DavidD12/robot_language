@@ -102,6 +102,15 @@ impl Skill {
         id
     }
 
+    pub fn get_precondition(&self, id: PreconditionId) -> Option<&Precondition> {
+        let PreconditionId(skill_id, n) = id;
+        if self.id != skill_id {
+            None
+        } else {
+            self.preconditions.get(n)
+        }
+    }
+
     //---------- Start ----------
 
     pub fn start(&self) -> &Vec<Effect> {
@@ -355,6 +364,12 @@ impl Named<SkillId> for Skill {
     }
     fn position(&self) -> Option<Position> {
         self.position
+    }
+}
+
+impl GetFromId<PreconditionId, Precondition> for Skill {
+    fn get(&self, id: PreconditionId) -> Option<&Precondition> {
+        self.get_precondition(id)
     }
 }
 

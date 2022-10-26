@@ -109,7 +109,7 @@ impl<'a> Smt<'a> {
         }
     }
 
-    pub fn expr_to_smt(&self, expr: &Expr, next: bool) -> z3::ast::Bool {
+    pub fn to_bool(&self, expr: &Expr, next: bool) -> z3::ast::Bool {
         match expr {
             Expr::True => z3::ast::Bool::from_bool(self.ctx, true),
             Expr::False => z3::ast::Bool::from_bool(self.ctx, true),
@@ -135,17 +135,15 @@ impl<'a> Smt<'a> {
                 let state = self.get_state(s_id);
                 z3::ast::Bool::not(&resource_state._eq(&state))
             }
-            Expr::Not(e) => z3::ast::Bool::not(&self.expr_to_smt(e, next)),
-            Expr::And(l, r) => z3::ast::Bool::and(
-                self.ctx,
-                &[&self.expr_to_smt(l, next), &self.expr_to_smt(r, next)],
-            ),
-            Expr::Or(l, r) => z3::ast::Bool::or(
-                self.ctx,
-                &[&self.expr_to_smt(l, next), &self.expr_to_smt(r, next)],
-            ),
+            Expr::Not(e) => z3::ast::Bool::not(&self.to_bool(e, next)),
+            Expr::And(l, r) => {
+                z3::ast::Bool::and(self.ctx, &[&self.to_bool(l, next), &self.to_bool(r, next)])
+            }
+            Expr::Or(l, r) => {
+                z3::ast::Bool::or(self.ctx, &[&self.to_bool(l, next), &self.to_bool(r, next)])
+            }
             Expr::Implies(l, r) => {
-                z3::ast::Bool::implies(&self.expr_to_smt(l, next), &self.expr_to_smt(r, next))
+                z3::ast::Bool::implies(&self.to_bool(l, next), &self.to_bool(r, next))
             }
         }
     }
@@ -189,7 +187,7 @@ impl<'a> Smt<'a> {
     }
 
     pub fn get_solution(self, model: &z3::Model, next: bool) -> Solution {
-        let mut solution = Solution::empty();
+        let mut solution = Solution::empty(self.skillset.id());
         for resource in self.skillset.resources().iter() {
             let state = model
                 .eval(&self.resource_current[&resource.id()], true)

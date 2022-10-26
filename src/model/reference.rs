@@ -1,7 +1,8 @@
 use super::*;
 use crate::parser::Position;
+use std::collections::HashMap;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub enum Reference<I: Id> {
     Unresolved(String, Option<Position>),
     Resolved(I),
@@ -12,6 +13,19 @@ impl<I: Id> Reference<I> {
         match self {
             Reference::Unresolved(_, _) => panic!("reference must be resolved"),
             Reference::Resolved(id) => *id,
+        }
+    }
+
+    pub fn resolve(&self, map: &HashMap<String, I>, info: &str) -> Result<Self, RlError> {
+        match self {
+            Reference::Unresolved(name, pos) => match map.get(name) {
+                Some(id) => Ok(Self::Resolved(*id)),
+                None => Err(RlError::Resolve {
+                    element: format!("{} '{}'", info, name),
+                    position: *pos,
+                }),
+            },
+            Reference::Resolved(_) => Ok(self.clone()),
         }
     }
 }
