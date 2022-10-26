@@ -10,3 +10,5 @@
 
 - check state type (i.e. same Resource)
 - change resolve with the reference method
+
+- add verif useful ?

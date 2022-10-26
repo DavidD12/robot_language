@@ -176,6 +176,15 @@ impl Skill {
         id
     }
 
+    pub fn get_success(&self, id: SuccessId) -> Option<&Success> {
+        let SuccessId(skill_id, n) = id;
+        if self.id != skill_id {
+            None
+        } else {
+            self.successes.get(n)
+        }
+    }
+
     //---------- Failure ----------
 
     pub fn failures(&self) -> &Vec<Failure> {
@@ -187,6 +196,15 @@ impl Skill {
         failure.set_id(id);
         self.failures.push(failure);
         id
+    }
+
+    pub fn get_failure(&self, id: FailureId) -> Option<&Failure> {
+        let FailureId(skill_id, n) = id;
+        if self.id != skill_id {
+            None
+        } else {
+            self.failures.get(n)
+        }
     }
 
     //---------- Duplicate ----------
@@ -384,6 +402,16 @@ impl GetFromId<PreconditionId, Precondition> for Skill {
 impl GetFromId<InvariantId, Invariant> for Skill {
     fn get(&self, id: InvariantId) -> Option<&Invariant> {
         self.get_invariant(id)
+    }
+}
+impl GetFromId<SuccessId, Success> for Skill {
+    fn get(&self, id: SuccessId) -> Option<&Success> {
+        self.get_success(id)
+    }
+}
+impl GetFromId<FailureId, Failure> for Skill {
+    fn get(&self, id: FailureId) -> Option<&Failure> {
+        self.get_failure(id)
     }
 }
 

@@ -201,6 +201,20 @@ impl GetFromId<InvariantId, Invariant> for Model {
         skill.get(id)
     }
 }
+impl GetFromId<SuccessId, Success> for Model {
+    fn get(&self, id: SuccessId) -> Option<&Success> {
+        let SuccessId(skill_id, _) = id;
+        let skill = self.get(skill_id)?;
+        skill.get(id)
+    }
+}
+impl GetFromId<FailureId, Failure> for Model {
+    fn get(&self, id: FailureId) -> Option<&Failure> {
+        let FailureId(skill_id, _) = id;
+        let skill = self.get(skill_id)?;
+        skill.get(id)
+    }
+}
 
 //------------------------- Display -------------------------
 

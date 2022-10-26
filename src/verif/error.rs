@@ -17,6 +17,10 @@ pub enum VError {
     SkillInvariantCantFail(InvariantId),
     SkillInvariantEffectCanFail(InvariantId, Solution),
     SkillStartInvariantCanFail(InvariantId, Solution),
+    // Terminate
+    SkillInterruptEffectCanFail(SkillId, Solution),
+    SkillSuccessEffectCanFail(SuccessId, Solution),
+    SkillFailureEffectCanFail(FailureId, Solution),
 }
 
 impl ToLang for VError {
@@ -91,6 +95,37 @@ impl ToLang for VError {
                     "skill '{}' invariant '{}' start can fail at start: {}",
                     skill.name(),
                     inv.name(),
+                    sol.to_lang(model)
+                )
+            }
+            // Terminate
+            VError::SkillInterruptEffectCanFail(s, sol) => {
+                let skill = model.get(*s).unwrap();
+                format!(
+                    "skill '{}' interrupt effect can fail: {}",
+                    skill.name(),
+                    sol.to_lang(model)
+                )
+            }
+            VError::SkillSuccessEffectCanFail(s, sol) => {
+                let SuccessId(skill_id, _) = s;
+                let skill = model.get(*skill_id).unwrap();
+                let success = model.get(*s).unwrap();
+                format!(
+                    "skill '{}' success '{}' effect can fail: {}",
+                    skill.name(),
+                    success.name(),
+                    sol.to_lang(model)
+                )
+            }
+            VError::SkillFailureEffectCanFail(f, sol) => {
+                let FailureId(skill_id, _) = f;
+                let skill = model.get(*skill_id).unwrap();
+                let failure = model.get(*f).unwrap();
+                format!(
+                    "skill '{}' failure '{}' effect can fail: {}",
+                    skill.name(),
+                    failure.name(),
                     sol.to_lang(model)
                 )
             }

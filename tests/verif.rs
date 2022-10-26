@@ -31,6 +31,11 @@ mod tests_ok {
     fn invariant_1() {
         check_file_ok("examples/tests/verif/invariant_1.rl");
     }
+
+    #[test]
+    fn terminate_1() {
+        check_file_ok("examples/tests/verif/terminate_1.rl");
+    }
 }
 
 mod tests_err {
@@ -99,5 +104,21 @@ mod tests_err {
     fn invariant_err_4() {
         let result = check_file_err("examples/tests/verif/invariant_err_4.rl");
         assert!(matches!(result, VError::SkillStartInvariantCanFail(_, _)));
+    }
+
+    #[test]
+    fn terminate_err_1() {
+        let result = check_file_err("examples/tests/verif/terminate_err_1.rl");
+        assert!(matches!(result, VError::SkillInterruptEffectCanFail(_, _)));
+    }
+    #[test]
+    fn terminate_err_2() {
+        let result = check_file_err("examples/tests/verif/terminate_err_2.rl");
+        assert!(matches!(result, VError::SkillSuccessEffectCanFail(_, _)));
+    }
+    #[test]
+    fn terminate_err_3() {
+        let result = check_file_err("examples/tests/verif/terminate_err_3.rl");
+        assert!(matches!(result, VError::SkillFailureEffectCanFail(_, _)));
     }
 }
