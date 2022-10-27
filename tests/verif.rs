@@ -36,6 +36,11 @@ mod tests_ok {
     fn terminate_1() {
         check_file_ok("examples/tests/verif/terminate_1.rl");
     }
+
+    #[test]
+    fn postcondition_1() {
+        check_file_ok("examples/tests/verif/postcondition_1.rl");
+    }
 }
 
 mod tests_err {
@@ -120,5 +125,30 @@ mod tests_err {
     fn terminate_err_3() {
         let result = check_file_err("examples/tests/verif/terminate_err_3.rl");
         assert!(matches!(result, VError::SkillFailureEffectCanFail(_, _)));
+    }
+
+    #[test]
+    fn postcondition_err_1() {
+        let result = check_file_err("examples/tests/verif/postcondition_err_1.rl");
+        assert!(matches!(
+            result,
+            VError::SkillInterruptPostconditionCanFail(_, _)
+        ));
+    }
+    #[test]
+    fn postcondition_err_2() {
+        let result = check_file_err("examples/tests/verif/postcondition_err_2.rl");
+        assert!(matches!(
+            result,
+            VError::SkillSuccessPostconditionCanFail(_, _)
+        ));
+    }
+    #[test]
+    fn postcondition_err_3() {
+        let result = check_file_err("examples/tests/verif/postcondition_err_3.rl");
+        assert!(matches!(
+            result,
+            VError::SkillFailurePostconditionCanFail(_, _)
+        ));
     }
 }

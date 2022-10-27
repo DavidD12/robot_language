@@ -24,3 +24,6 @@ pub use invariant::*;
 
 pub mod terminate;
 pub use terminate::*;
+
+pub mod postcondition;
+pub use postcondition::*;

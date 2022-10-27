@@ -21,6 +21,10 @@ pub enum VError {
     SkillInterruptEffectCanFail(SkillId, Solution),
     SkillSuccessEffectCanFail(SuccessId, Solution),
     SkillFailureEffectCanFail(FailureId, Solution),
+    // Postcondition
+    SkillInterruptPostconditionCanFail(SkillId, Solution),
+    SkillSuccessPostconditionCanFail(SuccessId, Solution),
+    SkillFailurePostconditionCanFail(FailureId, Solution),
 }
 
 impl ToLang for VError {
@@ -124,6 +128,37 @@ impl ToLang for VError {
                 let failure = model.get(*f).unwrap();
                 format!(
                     "skill '{}' failure '{}' effect can fail: {}",
+                    skill.name(),
+                    failure.name(),
+                    sol.to_lang(model)
+                )
+            }
+            // Postcondition
+            VError::SkillInterruptPostconditionCanFail(s, sol) => {
+                let skill = model.get(*s).unwrap();
+                format!(
+                    "skill '{}' interrupt postcondition can fail: {}",
+                    skill.name(),
+                    sol.to_lang(model)
+                )
+            }
+            VError::SkillSuccessPostconditionCanFail(s, sol) => {
+                let SuccessId(skill_id, _) = s;
+                let skill = model.get(*skill_id).unwrap();
+                let success = model.get(*s).unwrap();
+                format!(
+                    "skill '{}' success '{}' postcondition can fail: {}",
+                    skill.name(),
+                    success.name(),
+                    sol.to_lang(model)
+                )
+            }
+            VError::SkillFailurePostconditionCanFail(f, sol) => {
+                let FailureId(skill_id, _) = f;
+                let skill = model.get(*skill_id).unwrap();
+                let failure = model.get(*f).unwrap();
+                format!(
+                    "skill '{}' failure '{}' postcondition can fail: {}",
                     skill.name(),
                     failure.name(),
                     sol.to_lang(model)

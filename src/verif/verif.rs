@@ -23,6 +23,8 @@ pub fn check_skill(skillset: &Skillset, skill: &Skill) -> Vec<VError> {
     v.extend(check_skill_invariants(skillset, skill));
     // Terminate
     v.extend(check_skill_terminates(skillset, skill));
+    // Postcondition
+    v.extend(check_skill_postconditions(skillset, skill));
     //
     v
 }
